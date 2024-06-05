@@ -52,6 +52,11 @@ const userSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
+        did: {
+            type: String,
+            required: true,
+            unique: true,
+        },
         socials: {
             x: {
                 type: String,

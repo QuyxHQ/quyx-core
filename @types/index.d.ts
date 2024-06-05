@@ -15,6 +15,7 @@ type User = {
     username: string;
     hasBlueTick: boolean;
     address: string;
+    did: string;
     pfp?: string | null;
     bio?: string | null;
     socials?: {

@@ -16,6 +16,8 @@ let {
     REFRESH_TOKEN_TTL,
     TG_BOT_TOKEN,
     STREAM_KEY,
+    FILEBASE_ACCESS_KEY,
+    FILEBASE_SECRET_KEY,
 } = process.env;
 
 NETWORK = NETWORK == 'mainnet' ? NETWORK : 'testnet';
@@ -44,4 +46,6 @@ export default {
     REFRESH_TOKEN_TTL,
     TG_BOT_TOKEN,
     STREAM_KEY,
+    FILEBASE_ACCESS_KEY,
+    FILEBASE_SECRET_KEY,
 };

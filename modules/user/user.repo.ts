@@ -3,9 +3,11 @@ import userModel, { userDoc } from './user.model';
 import { Logger } from '../../shared/logger';
 import mongoose from 'mongoose';
 import { generateUsername } from 'unique-username-generator';
+import FileBase from '../../shared/adapters/filebase';
+import IdentityManagement from '../../shared/adapters/identity';
 
 export default class UserRepo extends BaseRepo<User, userDoc> {
-    constructor() {
+    constructor(private storage = new FileBase(), private identity = new IdentityManagement()) {
         super(userModel);
     }
 
@@ -29,13 +31,22 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
             const user = await this.getUser(address);
             if (user) return { status: true, data: user };
 
-            const username = await this.getUsername();
+            const [username, { did }] = await Promise.all([
+                this.getUsername(),
+                this.identity.createDID(),
+            ]);
 
-            const result = await this.insert({
-                address,
-                hasBlueTick: false,
-                username,
-            });
+            const hash = await this.identity.hash(did);
+
+            const [result] = await Promise.all([
+                this.insert({
+                    address,
+                    hasBlueTick: false,
+                    username,
+                    did,
+                }),
+                this.storage.addFile(hash, []), // this will store the hash of all the user credentials
+            ]);
 
             return { status: true, data: result };
         } catch (e: any) {
