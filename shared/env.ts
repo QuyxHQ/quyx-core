@@ -8,26 +8,34 @@ let {
     ENCRYPTION_PUBLIC_KEY,
     TON_API,
     TON_API_TOKEN,
-    TON_API_WEBSOCKET,
     MONGODB_URI,
     SENTRY_DSN,
     JWT_SECRET,
     ACCESS_TOKEN_TTL,
     REFRESH_TOKEN_TTL,
     TG_BOT_TOKEN,
-    STREAM_KEY,
     FILEBASE_ACCESS_KEY,
     FILEBASE_SECRET_KEY,
+    REDIS_URL,
+    REDIS_TOKEN,
+    GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET,
+    GITHUB_REDIRECT_URL,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URL,
+    SESSION_SECRET,
+    DEV_BASE_URL,
 } = process.env;
 
 NETWORK = NETWORK == 'mainnet' ? NETWORK : 'testnet';
 TON_API = TON_API || 'https://testnet.tonapi.io/v2'; // defaults to testnet
-TON_API_WEBSOCKET = TON_API_WEBSOCKET || 'wss://testnet.tonapi.io/v2/websocket'; // defaults to testnet
 MONGODB_URI = MONGODB_URI || 'mongodb://localhost:27017/quyx';
 JWT_SECRET = JWT_SECRET || 'super_secret_stuff_hahaha';
+SESSION_SECRET = SESSION_SECRET || 'super_secret_stuff_hahaha';
 ACCESS_TOKEN_TTL = ACCESS_TOKEN_TTL || '5m';
 REFRESH_TOKEN_TTL = REFRESH_TOKEN_TTL || '1y';
-STREAM_KEY = STREAM_KEY || 'you_cant_guess_this';
+DEV_BASE_URL = DEV_BASE_URL || 'http://localhost:5174';
 
 const IS_TESTNET = NETWORK === 'mainnet' ? false : true;
 
@@ -37,7 +45,6 @@ export default {
     ENCRYPTION_PUBLIC_KEY,
     TON_API,
     TON_API_TOKEN,
-    TON_API_WEBSOCKET,
     IS_TESTNET,
     MONGODB_URI,
     SENTRY_DSN,
@@ -45,7 +52,16 @@ export default {
     ACCESS_TOKEN_TTL,
     REFRESH_TOKEN_TTL,
     TG_BOT_TOKEN,
-    STREAM_KEY,
     FILEBASE_ACCESS_KEY,
     FILEBASE_SECRET_KEY,
+    REDIS_URL,
+    REDIS_TOKEN,
+    GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET,
+    GITHUB_REDIRECT_URL,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URL,
+    SESSION_SECRET,
+    DEV_BASE_URL,
 };

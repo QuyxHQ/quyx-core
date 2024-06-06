@@ -13,7 +13,7 @@ export default class SessionRoute extends AbstractRoutes {
         const repo = this.repo;
 
         //# gets all users sessions
-        this.router.get(`${this.path}`, isAuthorized, async function (_: Request, res: Response) {
+        this.router.get(`${this.path}`, isAuthorized(), async function (_: Request, res: Response) {
             const { user } = res.locals;
 
             const result = await repo.getSessions(user?._id!);
@@ -26,7 +26,7 @@ export default class SessionRoute extends AbstractRoutes {
         //# gets current session
         this.router.get(
             `${this.path}/current`,
-            isAuthorized,
+            isAuthorized(),
             async function (_: Request, res: Response) {
                 const { user, session } = res.locals;
 
@@ -43,7 +43,7 @@ export default class SessionRoute extends AbstractRoutes {
         //# deletes a session
         this.router.delete(
             `${this.path}/:session`,
-            isAuthorized,
+            isAuthorized(),
             async function (req: Request, res: Response) {
                 const { user } = res.locals;
                 const { session } = req.params;
@@ -59,7 +59,7 @@ export default class SessionRoute extends AbstractRoutes {
         //# deletes all session
         this.router.delete(
             `${this.path}`,
-            isAuthorized,
+            isAuthorized(),
             async function (_: Request, res: Response) {
                 const { user } = res.locals;
 

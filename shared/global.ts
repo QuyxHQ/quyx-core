@@ -27,6 +27,22 @@ type ParsedMessage = {
     StateInit: string;
 };
 
+export function randomStr(
+    len: number,
+    arr: string = 'QWERTYUIOPASDFGHJKLZXCVBNM0123456789'
+): string {
+    var ans = '';
+    for (var i = len; i > 0; i--) {
+        ans += arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    return ans;
+}
+
+export function getHashKey(hash: string) {
+    return `__HASH:/${hash}`;
+}
+
 export async function generatePayloadToken(input?: string) {
     if (!env.ENCRYPTION_PUBLIC_KEY) throw new Error('RSA_PUBLIC_KEY not set');
 

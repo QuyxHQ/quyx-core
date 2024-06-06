@@ -5,6 +5,9 @@ import { get } from 'lodash';
 import isAuthorized from '../../shared/middleware/isAuthorized';
 import { updateUserSchema, updateUserType } from './user.schema';
 import validateSchema from '../../shared/middleware/validateSchema';
+import { tonSdk } from '../../shared/adapters/tonapi/service';
+import { Address } from 'ton-core';
+import { Logger } from '../../shared/logger';
 
 export default class UserRoute extends AbstractRoutes {
     constructor(private repo: UserRepo, router: Router) {
@@ -18,7 +21,7 @@ export default class UserRoute extends AbstractRoutes {
         //# update information
         this.router.put(
             `${this.path}`,
-            isAuthorized,
+            isAuthorized(),
             validateSchema(updateUserSchema),
             async function (req: Request<{}, {}, updateUserType['body']>, res: Response) {
                 const { user } = res.locals;
@@ -41,7 +44,7 @@ export default class UserRoute extends AbstractRoutes {
         //# gets current logged in user
         this.router.get(
             `${this.path}/whoami`,
-            isAuthorized,
+            isAuthorized(),
             async function (_: Request, res: Response) {
                 const { user } = res.locals;
 
@@ -56,7 +59,7 @@ export default class UserRoute extends AbstractRoutes {
         //# search for a user
         this.router.get(
             `${this.path}/search`,
-            isAuthorized,
+            isAuthorized(),
             async function (req: Request, res: Response) {
                 const q = get(req.query, 'q', undefined) as string | undefined;
                 if (!q) return res.sendStatus(400);
@@ -81,6 +84,37 @@ export default class UserRoute extends AbstractRoutes {
                     total: totalResult,
                     data: result,
                 });
+            }
+        );
+
+        //# gets user NFTs
+        this.router.get(
+            `${this.path}/nfts`,
+            isAuthorized(),
+            async function (req: Request, res: Response) {
+                const { user } = res.locals;
+
+                const page = parseInt(get(req.query, 'page', '1') as string);
+                const limit = parseInt(get(req.query, 'limit', '10') as string);
+
+                if (isNaN(page) || isNaN(limit)) return res.sendStatus(400);
+
+                try {
+                    const nfts = await tonSdk.getUserUsernames(
+                        Address.parse(user?.address!).toRawString(),
+                        page,
+                        limit
+                    );
+
+                    return res.status(200).json({
+                        status: true,
+                        data: nfts.nft_items,
+                    });
+                } catch (e: any) {
+                    Logger.red(e);
+
+                    return res.status(500).json({ status: false, error: e.message });
+                }
             }
         );
 

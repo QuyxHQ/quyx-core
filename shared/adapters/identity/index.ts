@@ -11,15 +11,23 @@ import { sha256 } from 'ton-crypto';
 import FileBase from '../filebase';
 import { NoSuchKey } from '@aws-sdk/client-s3';
 import { Logger } from '../../logger';
+import redis from '../redis';
+import { getHashKey } from '../../global';
 
-type FileObject = {
+export type VCFileObject = {
+    subject: string;
     jwt: string;
     revoked: boolean;
-    sites: string[];
+    spaces: string[];
+};
+
+export type SpaceFileObject = {
+    maps: Record<string, string>;
+    hashes: string[];
 };
 
 export default class IdentityManagement {
-    constructor(private storage: FileBase = new FileBase()) {}
+    constructor(private storage: FileBase = new FileBase(), private Redis: typeof redis = redis) {}
 
     private generateRandomKey() {
         const buffer = crypto.randomBytes(32);
@@ -108,17 +116,19 @@ export default class IdentityManagement {
         const hash = await this.hash(jwt);
         const subjectHash = await this.hash(subject);
 
-        const { gateway } = await this.storage.getFile(hash);
+        const { gateway } = await this.storage.getFile(subjectHash);
         const data = (await this.storage.readContentFromFile(gateway)) as string[];
         data.push(hash);
 
-        const [_, urls] = await Promise.all([
-            this.storage.addFile(subjectHash, data),
+        const [urls] = await Promise.all([
             this.storage.addFile(hash, {
+                subject,
                 jwt,
                 revoked: false,
-                sites: [],
+                spaces: [],
             }),
+            this.storage.addFile(subjectHash, data),
+            this.Redis.set(getHashKey(subjectHash), data),
         ]);
 
         return { jwt, hash, urls };
@@ -132,7 +142,7 @@ export default class IdentityManagement {
     async isVCRevoked(hash: string): Promise<boolean> {
         try {
             const { gateway } = await this.storage.getFile(hash);
-            const data = (await this.storage.readContentFromFile(gateway)) as FileObject;
+            const data = (await this.storage.readContentFromFile(gateway)) as VCFileObject;
             if (!data) return true;
 
             return data.revoked;
@@ -147,6 +157,16 @@ export default class IdentityManagement {
         return true;
     }
 
+    async getCredential(jwt: string) {
+        const resolver = {
+            resolve: async (did: string) => {
+                return await this.resolveDID(did);
+            },
+        };
+
+        return await verifyCredential(jwt, resolver as any);
+    }
+
     /**
      * Verifies a credential
      * @param  {string} jwt - credential JWT
@@ -159,9 +179,8 @@ export default class IdentityManagement {
         if (isRevoked) throw new Error('Credential has been revoked');
 
         const resolver = {
-            resolve: async (id: string) => {
-                const { didDocument } = await did.key.resolve(id);
-                return didDocument;
+            resolve: async (did: string) => {
+                return await this.resolveDID(did);
             },
         };
 
@@ -172,68 +191,122 @@ export default class IdentityManagement {
     }
 
     /**
-     * Gives site permission to access a particular credential
+     * Gives space permission to access a particular credential
      * @param  {string} hash - JWT hash
-     * @param  {string} subject - DID of site
+     * @param  {string} subject - DID of space
      **/
-    async permitSite(hash: string, subject: string) {
-        const subjectHash = await this.hash(subject);
+    async permitSpace(hash: string, subject: string) {
+        const spaceHash = await this.hash(subject);
 
-        const [{ gateway: vc_gateway }, { gateway: site_gateway }] = await Promise.all([
+        const [{ gateway: vc_gateway }, { gateway: space_gateway }] = await Promise.all([
             this.storage.getFile(hash),
-            this.storage.getFile(subjectHash),
+            this.storage.getFile(spaceHash),
         ]);
 
-        const [_vc, _site] = await Promise.all([
+        const [_vc, _space] = await Promise.all([
             this.storage.readContentFromFile(vc_gateway),
-            this.storage.readContentFromFile(site_gateway),
+            this.storage.readContentFromFile(space_gateway),
         ]);
 
-        let vc = _vc as FileObject;
+        let vc = _vc as VCFileObject;
         if (vc.revoked) throw new Error('Error: This credential has been revoked');
-        if (vc.sites.includes(subject)) throw new Error('Error: Access already exist');
+        if (vc.spaces.includes(subject)) return;
 
-        vc.sites.push(subject);
+        vc.spaces.push(subject);
 
-        let site = _site as string[]; // array of hash the site has access to
-        site.push(hash);
+        let space = _space as SpaceFileObject; // array of hash the space has access to
+        if (space.hashes.includes(hash)) return;
+
+        if (space.maps[vc.subject]) {
+            // remove the existing hash
+            space.hashes.splice(space.hashes.indexOf(space.maps[vc.subject]), 1);
+        }
+
+        space.maps[vc.subject] = hash;
+        space.hashes.push(hash);
 
         await Promise.all([
+            this.Redis.set(getHashKey(hash), vc),
+            this.Redis.set(getHashKey(spaceHash), space),
             this.storage.addFile(hash, vc),
-            this.storage.addFile(subjectHash, site),
+            this.storage.addFile(spaceHash, space),
         ]);
     }
 
     /**
-     * Revokes site access to a credential
+     * Revokes space access to a credential
      * @param  {string} hash - JWT hash
-     * @param  {string} subject - DID of site
+     * @param  {string} subject - DID of space
      **/
-    async revokeSiteAccess(hash: string, subject: string) {
+    async revokeSpaceAccess(hash: string, subject: string) {
         const subjectHash = await this.hash(subject);
 
-        const [{ gateway: vc_gateway }, { gateway: site_gateway }] = await Promise.all([
+        const [{ gateway: vc_gateway }, { gateway: space_gateway }] = await Promise.all([
             this.storage.getFile(hash),
             this.storage.getFile(subjectHash),
         ]);
 
-        const [_vc, _site] = await Promise.all([
+        const [_vc, _space] = await Promise.all([
             this.storage.readContentFromFile(vc_gateway),
-            this.storage.readContentFromFile(site_gateway),
+            this.storage.readContentFromFile(space_gateway),
         ]);
 
-        let vc = _vc as FileObject;
+        let vc = _vc as VCFileObject;
         if (vc.revoked) throw new Error('Error: This credential has been revoked');
-        if (!vc.sites.includes(subject)) throw new Error('Error: Previous access not found');
+        if (!vc.spaces.includes(subject)) return;
 
-        vc.sites.splice(vc.sites.indexOf(subject), 1);
+        vc.spaces.splice(vc.spaces.indexOf(subject), 1);
 
-        let site = _site as string[]; // array of hash the site has access to
-        site.splice(site.indexOf(hash), 1);
+        let space = _space as SpaceFileObject; // array of hash the space has access to
+        if (!space.hashes.includes(hash)) return;
+
+        delete space.maps[vc.subject];
+        space.hashes.splice(space.hashes.indexOf(hash), 1);
 
         await Promise.all([
+            this.Redis.set(getHashKey(hash), vc),
+            this.Redis.set(getHashKey(subjectHash), space),
             this.storage.addFile(hash, vc),
-            this.storage.addFile(subjectHash, site),
+            this.storage.addFile(subjectHash, space),
+        ]);
+    }
+
+    /**
+     * Revokes a credential
+     * @param  {string} hash - JWT hash
+     **/
+    async revoke(hash: string) {
+        const { gateway } = await this.storage.getFile(hash);
+        const data = (await this.storage.readContentFromFile(gateway)) as VCFileObject;
+        if (data.revoked) return;
+
+        if (data.spaces.length > 0) {
+            // revoking the spaces as well
+            const spaces = await Promise.all(data.spaces.map((space) => this.hash(space)));
+
+            const fn = spaces.map(async (space_hash) => {
+                const { gateway } = await this.storage.getFile(space_hash);
+                const space = (await this.storage.readContentFromFile(gateway)) as SpaceFileObject;
+
+                if (space.hashes.includes(hash)) {
+                    delete space.maps[data.subject];
+                    space.hashes.splice(space.hashes.indexOf(hash), 1);
+                }
+
+                await Promise.all([
+                    this.storage.addFile(space_hash, space),
+                    this.Redis.set(getHashKey(space_hash), space),
+                ]);
+            });
+
+            await Promise.all(fn);
+        }
+
+        data.revoked = true;
+
+        await Promise.all([
+            this.storage.addFile(hash, data),
+            this.Redis.set(getHashKey(hash), data),
         ]);
     }
 }

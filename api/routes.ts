@@ -5,11 +5,21 @@ import SessionRoute from '../modules/session/session.route';
 import SessionRepo from '../modules/session/session.repo';
 import UserRoute from '../modules/user/user.route';
 import UserRepo from '../modules/user/user.repo';
+import DevRoute from '../modules/dev/dev.route';
+import DevRepo from '../modules/dev/dev.repo';
+import IdentityRoute from '../modules/identity/identity.route';
+import IdentityManagement from '../shared/adapters/identity';
+import FileBase from '../shared/adapters/filebase';
+import SpaceRoute from '../modules/space/space.route';
+import SpaceRepo from '../modules/space/space.repo';
 
 function initRoutes(router: Router) {
     new AuthRoute(new AuthRepo(), router);
     new SessionRoute(new SessionRepo(), router);
     new UserRoute(new UserRepo(), router);
+    new DevRoute(new DevRepo(), router);
+    new IdentityRoute(new IdentityManagement(), new FileBase(), router);
+    new SpaceRoute(new SpaceRepo(), router);
 }
 
 const routes = Router();

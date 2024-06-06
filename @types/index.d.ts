@@ -1,3 +1,21 @@
+type ACTORS = 'user' | 'dev' | 'space:sk' | 'space:pk';
+
+type Space = {
+    owner: string;
+    name: string;
+    did: string;
+    url?: string | null;
+    keys: { pk: string; sk: string };
+    isActive: boolean;
+};
+
+type Dev = {
+    name: string;
+    email: string;
+    provider: 'github' | 'google';
+    picture: string;
+};
+
 type Auth = {
     token: string;
     isActive: boolean;
@@ -113,4 +131,35 @@ type TxData = {
     bounce_phase?: any;
     aborted: boolean;
     destroyed: boolean;
+};
+
+type NftItemPrice = {
+    value: string;
+    token_name: string;
+};
+
+type NftItemSale = {
+    address: string;
+    market: AccountAddress;
+    owner?: AccountAddress;
+    price: NftItemPrice;
+};
+
+type NftItem = {
+    address: string;
+    index: number;
+    owner?: AccountAddress;
+    collection?: {
+        address: string;
+        name: string;
+        description: string;
+    };
+    verified: boolean;
+    metadata: Record<string, any>;
+    sale?: NftItemSale;
+    previews?: [{ resolution: string; url: string }];
+    dns?: string;
+    approved_by: 'getgems' | 'tonkeeper' | 'ton.diamonds';
+    include_cnft?: boolean;
+    trust: 'whitelist' | 'graylist' | 'blacklist' | 'none';
 };

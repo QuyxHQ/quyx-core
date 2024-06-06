@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import fs from 'fs';
 import path from 'path';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import session from 'express-session';
 import routes from './routes';
 import env from '../shared/env';
 import deserializeUser from '../shared/middleware/deserializeUser';
@@ -57,6 +58,14 @@ export default function createServer() {
                 'cache',
             ],
             exposedHeaders: ['X-Access-Token'],
+        })
+    );
+
+    app.use(
+        session({
+            secret: env.SESSION_SECRET,
+            resave: false,
+            saveUninitialized: true,
         })
     );
 

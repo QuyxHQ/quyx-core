@@ -12,7 +12,7 @@ export default class SessionRepo extends BaseRepo<Session, sessionDoc> {
 
     async createSession(input: Omit<Session, 'isActive'>) {
         try {
-            const result = await this.insert({ ...input, is_active: true });
+            const result = await this.insert({ ...input, isActive: true });
             return { status: true, data: result };
         } catch (e: any) {
             Logger.red(e);
@@ -23,7 +23,7 @@ export default class SessionRepo extends BaseRepo<Session, sessionDoc> {
 
     async deleteSession(user: string, session: string) {
         try {
-            const result = await this.update({ _id: session, user }, { is_active: false });
+            const result = await this.update({ _id: session, user }, { isActive: false });
             return { status: true, data: result };
         } catch (e: any) {
             Logger.red(e);
@@ -34,7 +34,7 @@ export default class SessionRepo extends BaseRepo<Session, sessionDoc> {
 
     async deleteAllSessions(user: string) {
         try {
-            const result = await this.updateMany({ user }, { is_active: false });
+            const result = await this.updateMany({ user }, { isActive: false });
             return { status: true, data: result };
         } catch (e: any) {
             Logger.red(e);

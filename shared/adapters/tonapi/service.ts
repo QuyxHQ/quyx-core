@@ -25,6 +25,46 @@ class TonApiService {
 
         return data as TxData;
     }
+
+    async getUserUsernames(address: string, page = 1, limit = 20) {
+        const offset = (page - 1) * limit;
+        const collection = '';
+
+        const { error, data } = await this.client.get(
+            `/accounts/${address}/nfts?collection=${collection}&limit=${limit}&offset=${offset}&indirect_ownership=false`
+        );
+
+        if (error || 'error' in data) {
+            throw new Error(data.error || 'Unable to complete request');
+        }
+
+        return data as { nft_items: NftItem[] };
+    }
+
+    async getUsernames(page = 1, limit = 20) {
+        const offset = (page - 1) * limit;
+        const collection = '';
+
+        const { error, data } = await this.client.get(
+            `/nfts/collections/${collection}/items?limit=${limit}&offset=${offset}`
+        );
+
+        if (error || 'error' in data) {
+            throw new Error(data.error || 'Unable to complete request');
+        }
+
+        return data as { nft_items: NftItem[] };
+    }
+
+    async getUsername(nft_address: string) {
+        const { error, data } = await this.client.get(`/nfts/${nft_address}`);
+
+        if (error || 'error' in data) {
+            throw new Error(data.error || 'Unable to complete request');
+        }
+
+        return data as NftItem;
+    }
 }
 
 export const tonSdk = new TonApiService(new TonApiHttpClient());

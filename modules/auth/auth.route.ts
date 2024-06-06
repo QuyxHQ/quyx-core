@@ -7,9 +7,14 @@ import SessionRepo from '../session/session.repo';
 import { signJWT } from '../../shared/global';
 import env from '../../shared/env';
 import isAuthorized from '../../shared/middleware/isAuthorized';
+import { githubSdk } from './oauth/github';
+import { googleSdk } from './oauth/google';
+import DevRepo from '../dev/dev.repo';
+import { Logger } from '../../shared/logger';
 
 const userRepo = new UserRepo();
 const sessionRepo = new SessionRepo();
+const devRepo = new DevRepo();
 
 export default class AuthRoute extends AbstractRoutes {
     constructor(private repo: AuthRepo, router: Router) {
@@ -23,7 +28,7 @@ export default class AuthRoute extends AbstractRoutes {
         //# login with telegram
         this.router.put(
             `${this.path}/callback`,
-            isAuthorized,
+            isAuthorized(),
             async function (req: Request, res: Response) {
                 const { user } = res.locals;
 
@@ -104,5 +109,111 @@ export default class AuthRoute extends AbstractRoutes {
                 },
             });
         });
+
+        //# Github OAuth init
+        this.router.get(`${this.path}/github`, async function (req: Request, res: Response) {
+            const url = githubSdk.authURL();
+            return res.redirect(url);
+        });
+
+        //# Github OAuth callback
+        this.router.get(
+            `${this.path}/github/callback`,
+            async function (req: Request, res: Response) {
+                const code = get(req.query, 'code', undefined) as string | undefined;
+                if (!code) return res.sendStatus(400);
+
+                try {
+                    const token = await githubSdk.getToken(code);
+                    const user = await githubSdk.getUser(token);
+
+                    if (!user.email) {
+                        return res.redirect(
+                            `${env.DEV_BASE_URL}/oauth/callback/github?error=No public email available on this github account`
+                        );
+                    }
+
+                    const dev = await devRepo.findDev(user.email);
+                    if (dev && dev.provider !== 'github') {
+                        return res.redirect(
+                            `${env.DEV_BASE_URL}/oauth/callback/github?error=This email is in use by another account`
+                        );
+                    }
+
+                    const result = await devRepo.upsertDev({
+                        email: user.email,
+                        name: user.name.split(' ')[0],
+                        picture: user.avatar_url,
+                        provider: 'github',
+                    });
+
+                    if (!result.status) {
+                        return res.redirect(
+                            `${env.DEV_BASE_URL}/oauth/callback/github?error${result.error}`
+                        );
+                    }
+
+                    req.session.dev = result.data as unknown as Base & Dev;
+
+                    return res.redirect(`${env.DEV_BASE_URL}/oauth/callback/github`);
+                } catch (e: any) {
+                    Logger.red(e);
+
+                    return res.redirect(
+                        `${env.DEV_BASE_URL}/oauth/callback/github?error=${e.message}`
+                    );
+                }
+            }
+        );
+
+        //# Github OAuth init
+        this.router.get(`${this.path}/google`, async function (req: Request, res: Response) {
+            const url = githubSdk.authURL();
+            return res.redirect(url);
+        });
+
+        //# Google OAuth callback
+        this.router.get(
+            `${this.path}/google/callback`,
+            async function (req: Request, res: Response) {
+                const code = get(req.query, 'code', undefined) as string | undefined;
+                if (!code) return res.sendStatus(400);
+
+                try {
+                    const token = await googleSdk.getToken(code);
+                    const user = await googleSdk.getUser(token);
+
+                    const dev = await devRepo.findDev(user.email);
+                    if (dev && dev.provider !== 'google') {
+                        return res.redirect(
+                            `${env.DEV_BASE_URL}/oauth/callback/google?error=This email is in use by another account`
+                        );
+                    }
+
+                    const result = await devRepo.upsertDev({
+                        email: user.email,
+                        name: user.name.split(' ')[0],
+                        picture: user.picture,
+                        provider: 'github',
+                    });
+
+                    if (!result.status) {
+                        return res.redirect(
+                            `${env.DEV_BASE_URL}/oauth/callback/google?error${result.error}`
+                        );
+                    }
+
+                    req.session.dev = result.data as unknown as Base & Dev;
+
+                    return res.redirect(`${env.DEV_BASE_URL}/oauth/callback/google`);
+                } catch (e: any) {
+                    Logger.red(e);
+
+                    return res.redirect(
+                        `${env.DEV_BASE_URL}/oauth/callback/google?error=${e.message}`
+                    );
+                }
+            }
+        );
     }
 }
