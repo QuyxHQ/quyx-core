@@ -3,7 +3,14 @@ import { AbstractRoutes } from '../../shared/abstract.routes';
 import SpaceRepo from './space.repo';
 import isAuthorized from '../../shared/middleware/isAuthorized';
 import validateSchema from '../../shared/middleware/validateSchema';
-import { newSpaceSchema, newSpaceType, updateSpaceSchema, updateSpaceType } from './space.schema';
+import {
+    getSpacesSchema,
+    getSpacesType,
+    newSpaceSchema,
+    newSpaceType,
+    updateSpaceSchema,
+    updateSpaceType,
+} from './space.schema';
 import { get } from 'lodash';
 
 export default class SpaceRoute extends AbstractRoutes {
@@ -15,7 +22,32 @@ export default class SpaceRoute extends AbstractRoutes {
     public handle(): void {
         const repo = this.repo;
 
-        // TODO: endpoint to get data of multiple DIDs(POST)
+        this.router.post(
+            `${this.path}/spaces`,
+            isAuthorized(),
+            validateSchema(getSpacesSchema),
+            async function (req: Request<{}, {}, getSpacesType['body']>, res: Response) {
+                const { spaces } = req.body;
+
+                const result = await repo.select(
+                    {
+                        did: { $in: spaces },
+                        isActive: true,
+                    },
+                    {
+                        name: 1,
+                        did: 1,
+                        url: 1,
+                    },
+                    {
+                        lean: true,
+                    }
+                );
+
+                return res.status(200).json({ status: true, data: result });
+            }
+        );
+
         this.router.post(
             `${this.path}`,
             isAuthorized('dev'),

@@ -13,5 +13,12 @@ export const updateSpaceSchema = z.object({
     }),
 });
 
+export const getSpacesSchema = z.object({
+    body: z.strictObject({
+        spaces: z.string().array(),
+    }),
+});
+
 export type newSpaceType = z.TypeOf<typeof newSpaceSchema>;
 export type updateSpaceType = z.TypeOf<typeof updateSpaceSchema>;
+export type getSpacesType = z.TypeOf<typeof getSpacesSchema>;
