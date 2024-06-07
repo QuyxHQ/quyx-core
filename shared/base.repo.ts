@@ -48,6 +48,16 @@ interface BaseRepoInterface<I, D> {
         options?: mongoose.mongo.UpdateOptions
     ): Promise<mongoose.UpdateWriteOpResult>;
 
+    delete(
+        filter?: mongoose.FilterQuery<D>,
+        options?: (mongoose.mongo.DeleteOptions & mongoose.MongooseBaseQueryOptions<D>) | null
+    ): Promise<mongoose.mongo.DeleteResult>;
+
+    deleteMany(
+        filter?: mongoose.FilterQuery<D>,
+        options?: (mongoose.mongo.DeleteOptions & mongoose.MongooseBaseQueryOptions<D>) | null
+    ): Promise<mongoose.mongo.DeleteResult>;
+
     aggregate(
         pipeline?: mongoose.PipelineStage[],
         options?: mongoose.AggregateOptions
@@ -127,6 +137,22 @@ export default class BaseRepo<I = {}, D = {}> implements BaseRepoInterface<I, D>
 
             throw new Error(e);
         }
+    }
+
+    async delete(
+        filter?: mongoose.FilterQuery<D>,
+        options?: (mongoose.mongo.DeleteOptions & mongoose.MongooseBaseQueryOptions<D>) | null
+    ) {
+        const result = await this.model.deleteOne(filter, options);
+        return result;
+    }
+
+    async deleteMany(
+        filter?: mongoose.FilterQuery<D>,
+        options?: (mongoose.mongo.DeleteOptions & mongoose.MongooseBaseQueryOptions<D>) | null
+    ) {
+        const result = await this.model.deleteMany(filter, options);
+        return result;
     }
 
     async countRows(filter?: mongoose.FilterQuery<D>) {

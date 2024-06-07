@@ -65,6 +65,16 @@ class TonApiService {
 
         return data as NftItem;
     }
+
+    async getBulkNfts(account_ids: string[]) {
+        const { error, data } = await this.client.post('/nfts/_bulk', { account_ids });
+
+        if (error || 'error' in data) {
+            throw new Error(data.error || 'Unable to complete request');
+        }
+
+        return data as { nft_items: NftItem[] };
+    }
 }
 
 export const tonSdk = new TonApiService(new TonApiHttpClient());

@@ -1,5 +1,10 @@
 type ACTORS = 'user' | 'dev' | 'space:sk' | 'space:pk';
 
+type Bookmark = {
+    user: string;
+    address: string;
+};
+
 type Space = {
     owner: string;
     name: string;

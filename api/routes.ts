@@ -12,6 +12,9 @@ import IdentityManagement from '../shared/adapters/identity';
 import FileBase from '../shared/adapters/filebase';
 import SpaceRoute from '../modules/space/space.route';
 import SpaceRepo from '../modules/space/space.repo';
+import BookmarkRoute from '../modules/bookmarks/bookmark.route';
+import BookmarkRepo from '../modules/bookmarks/bookmark.repo';
+import MiscRoute from '../modules/misc/misc.route';
 
 function initRoutes(router: Router) {
     new AuthRoute(new AuthRepo(), router);
@@ -20,6 +23,8 @@ function initRoutes(router: Router) {
     new DevRoute(new DevRepo(), router);
     new IdentityRoute(new IdentityManagement(), new FileBase(), router);
     new SpaceRoute(new SpaceRepo(), router);
+    new BookmarkRoute(new BookmarkRepo(), router);
+    new MiscRoute(router);
 }
 
 const routes = Router();

@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { generateUsername } from 'unique-username-generator';
 import FileBase from '../../shared/adapters/filebase';
 import IdentityManagement from '../../shared/adapters/identity';
+import { Address } from 'ton-core';
 
 export default class UserRepo extends BaseRepo<User, userDoc> {
     constructor(private storage = new FileBase(), private identity = new IdentityManagement()) {
@@ -28,7 +29,9 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
 
     async upsertUser(address: string) {
         try {
-            const user = await this.getUser(address);
+            const rawAddr = Address.parse(address).toRawString();
+
+            const user = await this.getUser(rawAddr);
             if (user) return { status: true, data: user };
 
             const [username, { did }] = await Promise.all([
@@ -40,7 +43,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
 
             const [result] = await Promise.all([
                 this.insert({
-                    address,
+                    address: rawAddr,
                     hasBlueTick: false,
                     username,
                     did,
