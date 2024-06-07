@@ -55,7 +55,7 @@ export default class IdentityManagement {
         const { didDocument } = await did.key.generate({
             type: 'Ed25519',
             accept: 'application/did+json',
-            secureRandom: key.hex,
+            secureRandom: () => key.buffer,
         });
 
         return {
@@ -86,7 +86,7 @@ export default class IdentityManagement {
         const issuer = await did.key.generate({
             type: 'Ed25519',
             accept: 'application/did+json',
-            secureRandom: this.generateRandomKey().hex,
+            secureRandom: () => this.generateRandomKey().buffer,
         });
 
         const pk = (issuer.keys[0] as any).privateKeyJwk;

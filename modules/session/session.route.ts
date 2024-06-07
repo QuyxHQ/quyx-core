@@ -40,6 +40,21 @@ export default class SessionRoute extends AbstractRoutes {
             }
         );
 
+        //# deletes current session
+        this.router.delete(
+            `${this.path}/current`,
+            isAuthorized(),
+            async function (_: Request, res: Response) {
+                const { user, session } = res.locals;
+
+                const result = await repo.deleteSession(user?._id!, session?._id!);
+                return res.status(result.status ? 201 : 409).json({
+                    status: true,
+                    data: result,
+                });
+            }
+        );
+
         //# deletes a session
         this.router.delete(
             `${this.path}/:session`,

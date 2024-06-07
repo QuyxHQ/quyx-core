@@ -86,13 +86,15 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         }
     }
 
-    async updateUserInfo(user: string, input: Pick<User, 'username' | 'socials'>) {
+    async updateUserInfo(user: string, input: Pick<User, 'username' | 'bio' | 'pfp' | 'socials'>) {
         try {
             const result = await this.update(
                 { _id: user },
                 {
                     socials: input.socials,
                     username: input.username,
+                    bio: input.bio,
+                    pfp: input.pfp,
                 }
             );
 

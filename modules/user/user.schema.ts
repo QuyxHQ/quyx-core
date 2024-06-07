@@ -2,18 +2,20 @@ import { z } from 'zod';
 
 export const updateUserSchema = z.object({
     body: z.strictObject({
+        bio: z.string().nullable(),
+        pfp: z.string().optional(),
         username: z
             .string()
             .min(4)
             .refine(
-                (val) => /_{2,}/.test(val),
+                (val) => !/_{2,}/.test(val),
                 'Error: Username cannot have consecutive underscores'
             )
-            .refine((val) => /^_/.test(val), 'Error: Username cannot have a leading underscore')
-            .refine((val) => /_$/.test(val), 'Error: Username cannot have a trailing underscore')
-            .refine((val) => /\s/.test(val), 'Error: Username cannot have whitespace characters')
+            .refine((val) => !/^_/.test(val), 'Error: Username cannot have a leading underscore')
+            .refine((val) => !/_$/.test(val), 'Error: Username cannot have a trailing underscore')
+            .refine((val) => !/\s/.test(val), 'Error: Username cannot have whitespace characters')
             .refine(
-                (val) => /[^a-zA-Z0-9_]/.test(val),
+                (val) => !/[^a-zA-Z0-9_]/.test(val),
                 'Error: Username can only contain alphanumeric characters and underscores'
             ),
         socials: z

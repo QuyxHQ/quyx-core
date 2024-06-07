@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema(
         },
         bio: {
             type: String,
-            default: false,
+            default: null,
         },
         address: {
             type: String,

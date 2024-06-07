@@ -25,7 +25,7 @@ export default class UserRoute extends AbstractRoutes {
             validateSchema(updateUserSchema),
             async function (req: Request<{}, {}, updateUserType['body']>, res: Response) {
                 const { user } = res.locals;
-                const { username, socials } = req.body;
+                const { username, bio, pfp, socials } = req.body;
 
                 if (username != user?.username) {
                     const doesUsernameExist = await repo.countRows({ username });
@@ -36,7 +36,13 @@ export default class UserRoute extends AbstractRoutes {
                     }
                 }
 
-                const result = await repo.updateUserInfo(user?._id!, { username, socials });
+                const result = await repo.updateUserInfo(user?._id!, {
+                    username,
+                    socials,
+                    bio,
+                    pfp,
+                });
+
                 return res.status(result.status ? 201 : 422).json(result);
             }
         );
