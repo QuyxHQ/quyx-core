@@ -94,35 +94,31 @@ export default class UserRoute extends AbstractRoutes {
         );
 
         //# gets user NFTs
-        this.router.get(
-            `${this.path}/nfts`,
-            isAuthorized(),
-            async function (req: Request, res: Response) {
-                const { user } = res.locals;
+        this.router.get(`${this.path}/nfts/:address`, async function (req: Request, res: Response) {
+            const { address } = req.params;
 
-                const page = parseInt(get(req.query, 'page', '1') as string);
-                const limit = parseInt(get(req.query, 'limit', '10') as string);
+            const page = parseInt(get(req.query, 'page', '1') as string);
+            const limit = parseInt(get(req.query, 'limit', '10') as string);
 
-                if (isNaN(page) || isNaN(limit)) return res.sendStatus(400);
+            if (isNaN(page) || isNaN(limit)) return res.sendStatus(400);
 
-                try {
-                    const nfts = await tonSdk.getUserUsernames(
-                        Address.parse(user?.address!).toRawString(),
-                        page,
-                        limit
-                    );
+            try {
+                const nfts = await tonSdk.getUserUsernames(
+                    Address.parse(address).toRawString(),
+                    page,
+                    limit
+                );
 
-                    return res.status(200).json({
-                        status: true,
-                        data: nfts.nft_items,
-                    });
-                } catch (e: any) {
-                    Logger.red(e);
+                return res.status(200).json({
+                    status: true,
+                    data: nfts.nft_items,
+                });
+            } catch (e: any) {
+                Logger.red(e);
 
-                    return res.status(500).json({ status: false, error: e.message });
-                }
+                return res.status(500).json({ status: false, error: e.message });
             }
-        );
+        });
 
         //# gets a user from _id | username | address
         this.router.get(`${this.path}/:user`, async function (req: Request, res: Response) {

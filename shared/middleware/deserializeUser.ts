@@ -2,8 +2,10 @@ import { NextFunction, Response, Request } from 'express';
 import { get } from 'lodash';
 import { verifyJWT } from '../global';
 import SessionRepo from '../../modules/session/session.repo';
+import UserRepo from '../../modules/user/user.repo';
 
 const sessionRepo = new SessionRepo();
+const userRepo = new UserRepo();
 
 export default async function (req: Request, res: Response, next: NextFunction) {
     const accessToken = get(req, 'headers.authorization', '').replace(/^Bearer\s/, '');
@@ -14,7 +16,8 @@ export default async function (req: Request, res: Response, next: NextFunction) 
     const { decoded, expired } = verifyJWT(accessToken);
 
     if (decoded) {
-        res.locals.user = decoded.data?.user;
+        const user = await userRepo.getUser(decoded.data?.user._id);
+        res.locals.user = user as any;
         res.locals.session = decoded.data?.session;
 
         return next();
