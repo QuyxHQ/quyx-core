@@ -32,4 +32,12 @@ initRoutes(routes);
 
 routes.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
 
+routes.get('/collection/metadata', function (req: Request, res: Response) {
+    return res.status(200).json({
+        image: 'https://iili.io/JGZ15Yb.jpg',
+        name: 'Quyx Usernames',
+        description: 'TEST:Quyx usernames',
+    });
+});
+
 export = routes;
