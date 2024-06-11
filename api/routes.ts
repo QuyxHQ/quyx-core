@@ -15,6 +15,7 @@ import SpaceRepo from '../modules/space/space.repo';
 import BookmarkRoute from '../modules/bookmarks/bookmark.route';
 import BookmarkRepo from '../modules/bookmarks/bookmark.repo';
 import MiscRoute from '../modules/misc/misc.route';
+import { getCollectionMetadata, getNftItemMetadata } from '../modules/misc/misc.controllers';
 
 function initRoutes(router: Router) {
     new AuthRoute(new AuthRepo(), router);
@@ -32,12 +33,7 @@ initRoutes(routes);
 
 routes.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
 
-routes.get('/collection/metadata', function (req: Request, res: Response) {
-    return res.status(200).json({
-        image: 'https://iili.io/JGZ15Yb.jpg',
-        name: 'Quyx Usernames',
-        description: 'TEST:Quyx usernames',
-    });
-});
+routes.get('/collection/metadata', getCollectionMetadata);
+routes.get('/nft/metadata', getNftItemMetadata);
 
 export = routes;

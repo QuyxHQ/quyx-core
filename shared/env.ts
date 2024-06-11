@@ -26,6 +26,7 @@ let {
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URL,
     DEV_BASE_URL,
+    COLLECTION_ADDR,
 } = process.env;
 
 NETWORK = NETWORK == 'mainnet' ? NETWORK : 'testnet';
@@ -36,6 +37,7 @@ SESSION_SECRET = SESSION_SECRET || 'super_secret_stuff_hahaha';
 ACCESS_TOKEN_TTL = ACCESS_TOKEN_TTL || '5m';
 REFRESH_TOKEN_TTL = REFRESH_TOKEN_TTL || '1y';
 DEV_BASE_URL = DEV_BASE_URL || 'http://localhost:5174';
+COLLECTION_ADDR = COLLECTION_ADDR || 'kQAQuG1lyH4r2g8pJDRMN4EER4nD-iMa_9FIHJZ6JcT_MlQg';
 
 const IS_TESTNET = NETWORK === 'mainnet' ? false : true;
 
@@ -64,4 +66,5 @@ export default {
     GOOGLE_REDIRECT_URL,
     SESSION_SECRET,
     DEV_BASE_URL,
+    COLLECTION_ADDR,
 };

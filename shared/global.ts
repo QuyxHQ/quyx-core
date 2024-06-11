@@ -27,10 +27,18 @@ type ParsedMessage = {
     StateInit: string;
 };
 
-export function randomStr(
-    len: number,
-    arr: string = 'QWERTYUIOPASDFGHJKLZXCVBNM0123456789'
-): string {
+export function isValidAddress(address: string) {
+    try {
+        Address.parse(address);
+
+        return true;
+    } catch (e: any) {
+        return false;
+    }
+}
+
+const ALPHABETS = 'QWERTYUIOPASDFGHJKLZXCVBNM0123456789';
+export function randomStr(len: number, arr: string = ALPHABETS) {
     var ans = '';
     for (var i = len; i > 0; i--) {
         ans += arr[Math.floor(Math.random() * arr.length)];

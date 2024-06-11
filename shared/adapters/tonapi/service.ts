@@ -1,5 +1,6 @@
 import { AxiosInstance } from 'axios';
 import TonApiHttpClient from './client';
+import env from '../../env';
 
 class TonApiService {
     private client: AxiosInstance;
@@ -28,7 +29,7 @@ class TonApiService {
 
     async getUserUsernames(address: string, page = 1, limit = 20) {
         const offset = (page - 1) * limit;
-        const collection = '';
+        const collection = env.COLLECTION_ADDR;
 
         const { error, data } = await this.client.get(
             `/accounts/${address}/nfts?collection=${collection}&limit=${limit}&offset=${offset}&indirect_ownership=false`
@@ -43,7 +44,7 @@ class TonApiService {
 
     async getUsernames(page = 1, limit = 20) {
         const offset = (page - 1) * limit;
-        const collection = '';
+        const collection = env.COLLECTION_ADDR;
 
         const { error, data } = await this.client.get(
             `/nfts/collections/${collection}/items?limit=${limit}&offset=${offset}`

@@ -8,6 +8,7 @@ import validateSchema from '../../shared/middleware/validateSchema';
 import { tonSdk } from '../../shared/adapters/tonapi/service';
 import { Address } from 'ton-core';
 import { Logger } from '../../shared/logger';
+import { isValidAddress } from '../../shared/global';
 
 export default class UserRoute extends AbstractRoutes {
     constructor(private repo: UserRepo, router: Router) {
@@ -121,10 +122,14 @@ export default class UserRoute extends AbstractRoutes {
         });
 
         //# gets a user from _id | username | address
-        this.router.get(`${this.path}/:user`, async function (req: Request, res: Response) {
-            const { user } = req.params;
+        this.router.get(`${this.path}/:param`, async function (req: Request, res: Response) {
+            const { param } = req.params;
 
-            const result = await repo.getUser(user);
+            let result;
+
+            if (isValidAddress(param)) result = (await repo.upsertUser(param)).data;
+            else result = await repo.getUser(param);
+
             if (!result) return res.sendStatus(404);
 
             return res.status(200).json({
