@@ -153,7 +153,7 @@ type NftItemSale = {
 type NftItem = {
     address: string;
     index: number;
-    owner?: AccountAddress;
+    owner: AccountAddress;
     collection?: {
         address: string;
         name: string;

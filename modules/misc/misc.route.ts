@@ -85,7 +85,7 @@ export default class MiscRoute extends AbstractRoutes {
                 ]);
 
                 if (user) isBookmarked = await bookmarkRepo.isInBookmark(user._id, address);
-                const { data } = await userRepo.upsertUser(result.address);
+                const { data } = await userRepo.upsertUser(result.owner?.address);
 
                 return res.status(200).json({
                     ...result,
