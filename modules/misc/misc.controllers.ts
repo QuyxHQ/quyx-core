@@ -23,7 +23,8 @@ export function getNftItemMetadata(req: Request, res: Response) {
         name: `@${username}`,
         description:
             'A part of Quyx username - the starting point of your decentralized identity management',
-        image: `https://nfts.quyx.xyz?name=${username}`,
+        // image: `https://nfts.quyx.xyz?name=${username}`,
+        image: 'https://iili.io/JyLZR3v.png',
         buttons: [
             {
                 label: 'Open in Quyx',
