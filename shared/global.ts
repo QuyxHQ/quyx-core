@@ -27,6 +27,10 @@ type ParsedMessage = {
     StateInit: string;
 };
 
+export function sleep(seconds: number) {
+    return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+}
+
 export function isValidAddress(address: string) {
     try {
         Address.parse(address);
@@ -56,7 +60,7 @@ export async function generatePayloadToken(input?: string) {
 
     const payload: PayloadType = {
         issued_at: Date.now(),
-        expires_at: Date.now() + 120000, // expires 2 mins after issuing
+        expires_at: Date.now() + 3_600_000, // expires 60 mins after issuing
         data: input || String(Date.now()),
     };
 
@@ -70,8 +74,6 @@ export async function generatePayloadToken(input?: string) {
     );
 
     const token = buffer.toString('hex');
-    // inserting the token in db
-    // await authRepo.insert({ token, is_active: true });
 
     return token;
 }
@@ -106,14 +108,6 @@ export async function verifyPayloadToken(token: string) {
         return { status: false, error: 'Error: Token has expired' };
     }
 
-    // const tokenResult = await authRepo.selectOne({ token });
-    // if (!tokenResult) return { status: false, error: 'Error: Invalid token' };
-
-    // if (!tokenResult.is_active) {
-    //     return { status: false, error: 'Error: Token has been used' };
-    // }
-
-    // await authRepo.update({ token }, { is_active: false });
     return { status: true, data: result };
 }
 

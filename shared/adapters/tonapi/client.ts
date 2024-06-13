@@ -1,6 +1,7 @@
 import { AxiosResponse, AxiosError } from 'axios';
 import { HttpClient } from '../../http.client';
 import env from '../../env';
+import { Logger } from '../../logger';
 
 export default class TonApiHttpClient extends HttpClient {
     constructor() {
@@ -15,21 +16,26 @@ export default class TonApiHttpClient extends HttpClient {
     }
 
     _handleResponse({ data, status: statusCode }: AxiosResponse<any>) {
-        return {
+        const response = {
             error: false,
             data,
             statusCode,
         };
+
+        return response;
     }
 
     _handleError(error: AxiosError<any>) {
         const { data, status } = error.response!;
 
-        return {
+        const response = {
             error: true,
             data,
             statusCode: status,
         };
+
+        Logger.yellow(JSON.stringify(response, null, 4));
+        return response;
     }
 
     getInstance() {

@@ -74,7 +74,9 @@ export default class BookmarkRepo extends BaseRepo<Bookmark, bookmarkDoc> {
         }
     }
 
-    async isInBookmark(user: string, nft: string) {
+    async isInBookmark(user: string | null, nft: string) {
+        if (user == null) return false;
+
         const count = await this.countRows({
             user,
             address: Address.parse(nft).toRawString(),

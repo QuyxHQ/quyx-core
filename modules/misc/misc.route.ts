@@ -18,8 +18,6 @@ export default class MiscRoute extends AbstractRoutes {
     }
 
     public handle(): void {
-        //# TODO: manage auctions
-
         //# upload image
         this.router.post(
             `${this.path}/upload`,
@@ -57,12 +55,31 @@ export default class MiscRoute extends AbstractRoutes {
         //# gets all nft under the collection
         this.router.get(`${this.path}/nfts`, async function (req: Request, res: Response) {
             try {
+                const { user: whoami } = res.locals;
+
                 const page = parseInt(get(req.query, 'page', '1') as string);
                 const limit = parseInt(get(req.query, 'limit', '30') as string);
                 if (isNaN(page) || isNaN(limit)) return res.sendStatus(400);
 
                 const { nft_items } = await tonSdk.getUsernames(page, limit);
-                return res.status(200).json({ status: true, data: nft_items });
+
+                const fns = nft_items.map(async (item) => {
+                    const [user, isBookmarked] = await Promise.all([
+                        userRepo.upsertUser(
+                            item.owner.is_wallet
+                                ? item.owner.address
+                                : item.sale?.owner?.is_wallet
+                                ? item.sale.owner.address
+                                : null
+                        ),
+                        bookmarkRepo.isInBookmark(whoami?._id || null, item.address),
+                    ]);
+
+                    return { nft: item, user, isBookmarked };
+                });
+
+                const result = await Promise.all(fns);
+                return res.status(200).json({ status: true, data: result });
             } catch (e: any) {
                 Logger.red(e);
 

@@ -6,6 +6,7 @@ import { generateUsername } from 'unique-username-generator';
 import FileBase from '../../shared/adapters/filebase';
 import IdentityManagement from '../../shared/adapters/identity';
 import { Address } from 'ton-core';
+import { omit } from 'lodash';
 
 export default class UserRepo extends BaseRepo<User, userDoc> {
     constructor(private storage = new FileBase(), private identity = new IdentityManagement()) {
@@ -27,7 +28,9 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         return username;
     }
 
-    async upsertUser(address: string) {
+    async upsertUser(address: string | null) {
+        if (!address) return { status: true, data: null };
+
         try {
             const rawAddr = Address.parse(address).toRawString();
 
@@ -51,7 +54,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
                 this.storage.addFile(hash, []), // this will store the hash of all the user credentials
             ]);
 
-            return { status: true, data: result };
+            return { status: true, data: omit(result, 'tg') };
         } catch (e: any) {
             Logger.red(e);
 
@@ -121,11 +124,12 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
             filter.push({ _id: param });
         }
 
-        return await this.selectOne({ $or: filter }, {}, { lean: true });
+        const result = await this.selectOne({ $or: filter }, {}, { lean: true });
+        return omit(result, 'tg');
     }
 
     async searchForUser(q: string, limit?: number, skip?: number) {
-        return await this.select(
+        const result = await this.select(
             {
                 username: {
                     $regex: q,
@@ -139,5 +143,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
                 limit,
             }
         );
+
+        return result.map((item) => omit(item, 'tg'));
     }
 }

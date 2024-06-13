@@ -26,7 +26,10 @@ let {
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URL,
     DEV_BASE_URL,
+    CLIENT_BASE_URL,
     COLLECTION_ADDR,
+    TON_WEBSOCKET_URL,
+    MNEMONIC,
 } = process.env;
 
 NETWORK = NETWORK == 'mainnet' ? NETWORK : 'testnet';
@@ -37,8 +40,9 @@ SESSION_SECRET = SESSION_SECRET || 'super_secret_stuff_hahaha';
 ACCESS_TOKEN_TTL = ACCESS_TOKEN_TTL || '5m';
 REFRESH_TOKEN_TTL = REFRESH_TOKEN_TTL || '1y';
 DEV_BASE_URL = DEV_BASE_URL || 'http://localhost:5174';
+CLIENT_BASE_URL = CLIENT_BASE_URL || 'http://localhost:5173';
 COLLECTION_ADDR = COLLECTION_ADDR || 'kQAG8h-1sDtGxj0WZVDV4rhQ9ZyApEOa192H09Wl9rFD5Rbw';
-
+TON_WEBSOCKET_URL = TON_WEBSOCKET_URL || 'wss://testnet.tonapi.io/v2/websocket';
 const IS_TESTNET = NETWORK === 'mainnet' ? false : true;
 
 export default {
@@ -66,5 +70,8 @@ export default {
     GOOGLE_REDIRECT_URL,
     SESSION_SECRET,
     DEV_BASE_URL,
+    CLIENT_BASE_URL,
     COLLECTION_ADDR,
+    TON_WEBSOCKET_URL,
+    MNEMONIC,
 };

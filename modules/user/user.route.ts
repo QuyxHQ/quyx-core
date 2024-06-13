@@ -9,6 +9,9 @@ import { tonSdk } from '../../shared/adapters/tonapi/service';
 import { Address } from 'ton-core';
 import { Logger } from '../../shared/logger';
 import { isValidAddress } from '../../shared/global';
+import BookmarkRepo from '../bookmarks/bookmark.repo';
+
+const bookmarkRepo = new BookmarkRepo();
 
 export default class UserRoute extends AbstractRoutes {
     constructor(private repo: UserRepo, router: Router) {
@@ -96,6 +99,7 @@ export default class UserRoute extends AbstractRoutes {
 
         //# gets user NFTs
         this.router.get(`${this.path}/nfts/:address`, async function (req: Request, res: Response) {
+            const { user } = res.locals;
             const { address } = req.params;
 
             const page = parseInt(get(req.query, 'page', '1') as string);
@@ -104,16 +108,24 @@ export default class UserRoute extends AbstractRoutes {
             if (isNaN(page) || isNaN(limit)) return res.sendStatus(400);
 
             try {
-                const nfts = await tonSdk.getUserUsernames(
+                const { nft_items } = await tonSdk.getUserUsernames(
                     Address.parse(address).toRawString(),
                     page,
                     limit
                 );
 
-                return res.status(200).json({
-                    status: true,
-                    data: nfts.nft_items,
+                const fns = nft_items.map(async (item) => {
+                    const isBookmarked = await bookmarkRepo.isInBookmark(
+                        user?._id || null,
+                        item.address
+                    );
+
+                    return { nft: item, user: null, isBookmarked };
                 });
+
+                const result = await Promise.all(fns);
+
+                return res.status(200).json({ status: true, data: result });
             } catch (e: any) {
                 Logger.red(e);
 

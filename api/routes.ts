@@ -31,9 +31,9 @@ function initRoutes(router: Router) {
 const routes = Router();
 initRoutes(routes);
 
-routes.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
+routes.get('/healthz', (_: Request, res: Response) => res.sendStatus(200));
 
 routes.get('/collection/metadata', getCollectionMetadata);
-routes.get('/nft/metadata', getNftItemMetadata);
+routes.get('/nft/metadata/:username', getNftItemMetadata);
 
 export = routes;

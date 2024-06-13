@@ -10,14 +10,14 @@ export class Logger {
     }
 
     static yellow(msg: string): void {
-        Logger.say(FgYellow, `WARNING: ${msg}`);
+        Logger.say(FgYellow, msg);
     }
 
     static green(msg: string): void {
-        Logger.say(FgGreen, `SUCCESS: ${msg}`);
+        Logger.say(FgGreen, msg);
     }
 
     static red(msg: string): void {
-        Logger.say(FgRed, `ERROR: ${msg}`);
+        Logger.say(FgRed, msg);
     }
 }
