@@ -75,7 +75,7 @@ export default class MiscRoute extends AbstractRoutes {
                         bookmarkRepo.isInBookmark(whoami?._id || null, item.address),
                     ]);
 
-                    return { nft: item, user, isBookmarked };
+                    return { nft: item, user: user.data, isBookmarked };
                 });
 
                 const result = await Promise.all(fns);
