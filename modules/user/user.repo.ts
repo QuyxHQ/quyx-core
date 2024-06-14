@@ -170,7 +170,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         const { nft_items: nfts } =
             addresses.length > 0 ? await tonSdk.getBulkNfts(addresses) : { nft_items: [] };
 
-        const result = dbuser.pending_usernames.map(async function (item) {
+        const result = dbuser.pending_usernames.map(function (item) {
             const nft = nfts.find(function (nft) {
                 return nft.address == Address.parse(item.address).toRawString();
             })!;
