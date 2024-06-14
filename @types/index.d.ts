@@ -47,6 +47,10 @@ type User = {
         tg?: string | null;
         other?: string | null;
     };
+    pending_usernames: {
+        username: string;
+        address: string;
+    }[];
 };
 
 type Session = {

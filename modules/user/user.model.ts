@@ -75,6 +75,20 @@ const userSchema = new mongoose.Schema(
                 default: null,
             },
         },
+        pending_usernames: [
+            {
+                username: {
+                    type: String,
+                    required: true,
+                    unique: true,
+                },
+                address: {
+                    type: String,
+                    required: true,
+                    unique: true,
+                },
+            },
+        ],
     },
     {
         timestamps: true,

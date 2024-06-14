@@ -111,7 +111,7 @@ export default class AuthRoute extends AbstractRoutes {
         });
 
         //# Github OAuth init
-        this.router.get(`${this.path}/github`, async function (req: Request, res: Response) {
+        this.router.get(`${this.path}/github`, async function (_: Request, res: Response) {
             const url = githubSdk.authURL();
             return res.redirect(url);
         });
@@ -167,7 +167,7 @@ export default class AuthRoute extends AbstractRoutes {
         );
 
         //# Github OAuth init
-        this.router.get(`${this.path}/google`, async function (req: Request, res: Response) {
+        this.router.get(`${this.path}/google`, async function (_: Request, res: Response) {
             const url = githubSdk.authURL();
             return res.redirect(url);
         });

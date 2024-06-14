@@ -3,6 +3,9 @@ import { tonSdk } from '../../shared/adapters/tonapi/service';
 import BaseRepo from '../../shared/base.repo';
 import bookmarkModel, { bookmarkDoc } from './bookmark.model';
 import { Logger } from '../../shared/logger';
+import UserRepo from '../user/user.repo';
+
+const userRepo = new UserRepo();
 
 export default class BookmarkRepo extends BaseRepo<Bookmark, bookmarkDoc> {
     constructor() {
@@ -29,15 +32,26 @@ export default class BookmarkRepo extends BaseRepo<Bookmark, bookmarkDoc> {
                 return Address.parse(bookmark.address).toRawString();
             });
 
-            const { nft_items: nfts } = await tonSdk.getBulkNfts(addresses);
+            const { nft_items: nfts } =
+                addresses.length > 0 ? await tonSdk.getBulkNfts(addresses) : { nft_items: [] };
 
-            const result = bookmarks.map(function (bookmark) {
+            const fns = bookmarks.map(async function (bookmark) {
+                const repo = new BookmarkRepo();
                 const nft = nfts.find(function (nft) {
                     return nft.address == Address.parse(bookmark.address).toRawString();
                 })!;
 
-                return { ...bookmark, nft };
+                const [owner, isBookmarked] = await Promise.all([
+                    userRepo.getUser(
+                        nft.owner.is_wallet ? nft.owner.address : nft.sale?.owner?.address!
+                    ),
+                    repo.isInBookmark(user, nft.address),
+                ]);
+
+                return { ...bookmark, nft, owner, isBookmarked };
             });
+
+            const result = await Promise.all(fns);
 
             return { status: true, data: result };
         } catch (e: any) {

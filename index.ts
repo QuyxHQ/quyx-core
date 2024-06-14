@@ -14,6 +14,7 @@ import { NftItem } from './contracts/tact_NftItem';
 import UserRepo from './modules/user/user.repo';
 import { sleep } from './shared/global';
 import wallet from './shared/wallet';
+import { AuctionContract } from './contracts/tact_AuctionContract';
 
 const userRepo = new UserRepo();
 
@@ -64,9 +65,9 @@ const waitForOpenSocketConnection = (socket: WebSocket) => {
 
         const client = await Client();
 
-        //@ts-ignore
+        // auction for username
         agenda.define('auction', async (job: any) => {
-            const { username, address } = job.attrs.data;
+            const { user, username, address } = job.attrs.data;
 
             try {
                 const itemContract = client.open(NftItem.fromAddress(Address.parse(address)));
@@ -108,12 +109,39 @@ const waitForOpenSocketConnection = (socket: WebSocket) => {
                             await sleep(1.5);
                             currentSeqno = await contract.getSeqno();
                         }
+
+                        if (user) await userRepo.removePendingUsername(user, address);
                     }
                 }
 
                 await job.remove();
             } catch (e: any) {
                 Logger.red(`Error throw when ending auction: ${e.message}`);
+            }
+        });
+
+        // auction in marketplace
+        agenda.define('mp-auction', async (job: any) => {
+            const { address } = job.attrs.data;
+
+            try {
+                const auction = client.open(AuctionContract.fromAddress(Address.parse(address)));
+                const { end_time: auction_end_time } = await auction.getGetAuctionData();
+
+                const now = Date.now();
+                const end_time = Number(auction_end_time.toString()) * 1000;
+                if (end_time > now) {
+                    // auction end time has been extended
+                    // schedule a new job
+                    await agenda.schedule(new Date(end_time), 'mp-auction', { address });
+                } else {
+                    // end the auction here
+                    await auction.sendExternal('end');
+                }
+
+                await job.remove();
+            } catch (e: any) {
+                Logger.red(`Error throw when ending mp auction: ${e.message}`);
             }
         });
 
@@ -131,12 +159,17 @@ const waitForOpenSocketConnection = (socket: WebSocket) => {
         const ws = new WebSocket(env.TON_WEBSOCKET_URL);
 
         ws.on('open', () => {
-            const addr = Address.parse(env.COLLECTION_ADDR).toRawString();
+            const collection_addr = Address.parse(env.COLLECTION_ADDR).toRawString();
+            const mp_addr = Address.parse(env.MARKETPLACE_ADDR).toRawString();
+
             const message = {
                 id: 1,
                 jsonrpc: '2.0',
                 method: 'subscribe_account',
-                params: [`${addr};operations=0x57e52197,0x370fec51`],
+                params: [
+                    `${collection_addr};operations=0x57e52197,0x370fec51`,
+                    `${mp_addr};operations=0x05138d91`,
+                ],
             };
 
             Logger.yellow(JSON.stringify(message, null, 2));
@@ -163,6 +196,77 @@ const waitForOpenSocketConnection = (socket: WebSocket) => {
                 cs.loadUint(32); // opcode
                 cs.loadUint(64); // query_id
 
+                if (
+                    message.params.account_id == Address.parse(env.MARKETPLACE_ADDR).toRawString()
+                ) {
+                    if (!tx.out_msgs || tx.out_msgs.length == 0) return;
+
+                    console.log(tx.out_msgs);
+
+                    const log = tx.out_msgs.find((msg) => msg.op_code == '0x71e6098a');
+                    if (!log) return;
+
+                    const { raw_body: log_raw_body } = log;
+                    if (!log_raw_body) return;
+
+                    const log_cell = Cell.fromBoc(Buffer.from(log_raw_body, 'hex'));
+                    const log_cs = log_cell[0].beginParse();
+
+                    log_cs.loadUint(32); // opcode
+                    log_cs.loadUint(64); // query_id
+
+                    const action = log_cs.loadUint(8);
+                    const sale_address = log_cs.loadAddress();
+
+                    const user = await userRepo.upsertUser(cs.loadAddress().toRawString());
+
+                    if (action == 1) {
+                        // auction
+                        const contract = client.open(AuctionContract.fromAddress(sale_address));
+                        let auction;
+
+                        while (!auction) {
+                            try {
+                                auction = await contract.getGetAuctionData();
+                            } catch (e: any) {
+                                Logger.red(`Fetching mp nft auction info failed.....${e.message}`);
+                            }
+
+                            await sleep(2);
+                        }
+
+                        const runAt = Number(auction.end_time.toString()) * 100;
+
+                        // set a cron job to stop it at the end time
+                        await agenda.schedule(new Date(runAt), 'mp-auction', {
+                            address: sale_address.toRawString(),
+                        });
+
+                        // emit an event that an auction was just placed
+                        io.sockets.emit('message', {
+                            type: 'auction',
+                            address: sale_address.toRawString(),
+                            nft: source?.address,
+                            user: user.data,
+                            timestamp: Date.now(),
+                        });
+                    }
+
+                    if (action == 2) {
+                        // fixed sale
+                        // emit an event that a fixed sale was just created or somn
+                        io.sockets.emit('message', {
+                            type: 'fixed_sale',
+                            address: sale_address.toRawString(),
+                            nft: source?.address,
+                            user: user.data,
+                            timestamp: Date.now(),
+                        });
+                    }
+
+                    return;
+                }
+
                 if (op_code == '0x57e52197') {
                     // claim username
                     const username = cs.loadStringRefTail();
@@ -185,20 +289,29 @@ const waitForOpenSocketConnection = (socket: WebSocket) => {
                         await sleep(2);
                     }
 
-                    const runAt = Number(auctionInfo.auction_end_time.toString()) * 100;
+                    const user = await userRepo.upsertUser(source?.address!);
 
+                    const runAt = Number(auctionInfo.auction_end_time.toString()) * 100;
                     await agenda.schedule(new Date(runAt), 'auction', {
                         username,
                         index: index.toString(),
                         address: nft_addr.toRawString(),
+                        user: user.data?._id,
                     });
 
-                    const user = await userRepo.upsertUser(source?.address!);
+                    if (user.data) {
+                        await userRepo.addPendingUsername(user.data._id as string, [
+                            {
+                                address: nft_addr.toRawString(),
+                                username,
+                            },
+                        ]);
+                    }
 
                     io.sockets.emit('message', {
                         type: 'started_auction',
                         username,
-                        address: nft_addr.toString(),
+                        address: nft_addr.toRawString(),
                         user: user.data,
                         timestamp: Date.now(),
                     });

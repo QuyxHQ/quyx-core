@@ -67,35 +67,31 @@ export default class UserRoute extends AbstractRoutes {
         );
 
         //# search for a user
-        this.router.get(
-            `${this.path}/search`,
-            isAuthorized(),
-            async function (req: Request, res: Response) {
-                const q = get(req.query, 'q', undefined) as string | undefined;
-                if (!q) return res.sendStatus(400);
+        this.router.get(`${this.path}/search`, async function (req: Request, res: Response) {
+            const q = get(req.query, 'q', undefined) as string | undefined;
+            if (!q) return res.sendStatus(400);
 
-                const limit = parseInt(get(req.query, 'limit', '10') as string);
-                const page = parseInt(get(req.query, 'page', '1') as string);
-                if (isNaN(limit) || isNaN(page)) return res.sendStatus(400);
+            const limit = parseInt(get(req.query, 'limit', '10') as string);
+            const page = parseInt(get(req.query, 'page', '1') as string);
+            if (isNaN(limit) || isNaN(page)) return res.sendStatus(400);
 
-                const skip = (page - 1) * limit;
+            const skip = (page - 1) * limit;
 
-                const totalResult = await repo.countRows({
-                    username: {
-                        $regex: q,
-                        $options: 'i',
-                    },
-                });
+            const totalResult = await repo.countRows({
+                username: {
+                    $regex: q,
+                    $options: 'i',
+                },
+            });
 
-                const result = await repo.searchForUser(q, limit, skip);
+            const result = await repo.searchForUser(q, limit, skip);
 
-                return res.status(200).json({
-                    status: true,
-                    total: totalResult,
-                    data: result,
-                });
-            }
-        );
+            return res.status(200).json({
+                status: true,
+                total: totalResult,
+                data: result,
+            });
+        });
 
         //# gets user NFTs
         this.router.get(`${this.path}/nfts/:address`, async function (req: Request, res: Response) {
@@ -132,6 +128,17 @@ export default class UserRoute extends AbstractRoutes {
                 return res.status(500).json({ status: false, error: e.message });
             }
         });
+
+        //# gets all pending usernames for a user
+        this.router.get(
+            `${this.path}/nft/pending/:username`,
+            async function (req: Request, res: Response) {
+                const { username } = req.params;
+
+                const result = await repo.getPendingUsernames(username);
+                return res.status(200).json({ status: true, data: result || [] });
+            }
+        );
 
         //# gets a user from _id | username | address
         this.router.get(`${this.path}/:param`, async function (req: Request, res: Response) {

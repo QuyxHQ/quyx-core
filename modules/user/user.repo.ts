@@ -7,6 +7,7 @@ import FileBase from '../../shared/adapters/filebase';
 import IdentityManagement from '../../shared/adapters/identity';
 import { Address } from 'ton-core';
 import { omit } from 'lodash';
+import { tonSdk } from '../../shared/adapters/tonapi/service';
 
 export default class UserRepo extends BaseRepo<User, userDoc> {
     constructor(private storage = new FileBase(), private identity = new IdentityManagement()) {
@@ -50,6 +51,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
                     hasBlueTick: false,
                     username,
                     did,
+                    pending_usernames: [],
                 }),
                 this.storage.addFile(hash, []), // this will store the hash of all the user credentials
             ]);
@@ -111,7 +113,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
 
     // param = _id | username | address
     async getUser(param: string) {
-        const filter: Record<string, string | number>[] = [
+        const filter: Record<string, string>[] = [
             {
                 username: param,
             },
@@ -125,7 +127,8 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         }
 
         const result = await this.selectOne({ $or: filter }, {}, { lean: true });
-        return omit(result, 'tg');
+        if (result) return omit(result, 'tg');
+        return result;
     }
 
     async searchForUser(q: string, limit?: number, skip?: number) {
@@ -145,5 +148,58 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         );
 
         return result.map((item) => omit(item, 'tg'));
+    }
+
+    async getPendingUsernames(username: string) {
+        const dbuser = await this.selectOne(
+            {
+                username,
+            },
+            {
+                pending_usernames: 1,
+            },
+            {
+                lean: true,
+            }
+        );
+
+        if (!dbuser) return null;
+
+        const addresses = dbuser.pending_usernames.map((item) => item.address);
+
+        const { nft_items: nfts } =
+            addresses.length > 0 ? await tonSdk.getBulkNfts(addresses) : { nft_items: [] };
+
+        const result = dbuser.pending_usernames.map(async function (item) {
+            const nft = nfts.find(function (nft) {
+                return nft.address == Address.parse(item.address).toRawString();
+            })!;
+
+            return { ...item, nft };
+        });
+
+        return result;
+    }
+
+    async addPendingUsername(user: string, data: User['pending_usernames']) {
+        const dbuser = await this.selectOne({ _id: user });
+        if (!dbuser) return;
+
+        dbuser.pending_usernames = [...dbuser.pending_usernames, ...data];
+        await dbuser.save();
+
+        return true;
+    }
+
+    async removePendingUsername(user: string, address: string) {
+        const dbuser = await this.selectOne({ _id: user });
+        if (!dbuser) return;
+
+        dbuser.pending_usernames = dbuser.pending_usernames.filter(
+            (item) => item.address != address
+        );
+
+        await dbuser.save();
+        return true;
     }
 }

@@ -28,6 +28,7 @@ let {
     DEV_BASE_URL,
     CLIENT_BASE_URL,
     COLLECTION_ADDR,
+    MARKETPLACE_ADDR,
     TON_WEBSOCKET_URL,
     MNEMONIC,
 } = process.env;
@@ -42,6 +43,7 @@ REFRESH_TOKEN_TTL = REFRESH_TOKEN_TTL || '1y';
 DEV_BASE_URL = DEV_BASE_URL || 'http://localhost:5174';
 CLIENT_BASE_URL = CLIENT_BASE_URL || 'http://localhost:5173';
 COLLECTION_ADDR = COLLECTION_ADDR || 'EQBGYC-l0cA_Y-8JjxsLEWdJ1RrBdwzZVcbbkzTEE4pJWcpV';
+MARKETPLACE_ADDR = MARKETPLACE_ADDR || 'EQDad_tJzZZ87OnCZsFeiGi3Fh-baOowzliRvDCkE1joJ3VT';
 TON_WEBSOCKET_URL = TON_WEBSOCKET_URL || 'wss://testnet.tonapi.io/v2/websocket';
 const IS_TESTNET = NETWORK === 'mainnet' ? false : true;
 
@@ -72,6 +74,7 @@ export default {
     DEV_BASE_URL,
     CLIENT_BASE_URL,
     COLLECTION_ADDR,
+    MARKETPLACE_ADDR,
     TON_WEBSOCKET_URL,
     MNEMONIC,
 };
