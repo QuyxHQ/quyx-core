@@ -9,18 +9,22 @@ export default class FileBase {
     private s3: S3Client;
 
     constructor(private bucket = 'quyx') {
-        if (!env.FILEBASE_ACCESS_KEY || !env.FILEBASE_SECRET_KEY) {
-            throw new Error('FILEBASE_ACCESS_KEY or FILEBASE_SECRET_KEY not set');
-        }
+        if (env.IS_TESTNET) {
+            this.s3 = new S3Client({ endpoint: 'https://s3.filebase.com', region: 'us-east-1' });
+        } else {
+            if (!env.FILEBASE_ACCESS_KEY || !env.FILEBASE_SECRET_KEY) {
+                throw new Error('FILEBASE_ACCESS_KEY or FILEBASE_SECRET_KEY not set');
+            }
 
-        this.s3 = new S3Client({
-            endpoint: 'https://s3.filebase.com',
-            region: 'us-east-1',
-            credentials: {
-                accessKeyId: env.FILEBASE_ACCESS_KEY,
-                secretAccessKey: env.FILEBASE_SECRET_KEY,
-            },
-        });
+            this.s3 = new S3Client({
+                endpoint: 'https://s3.filebase.com',
+                region: 'us-east-1',
+                credentials: {
+                    accessKeyId: env.FILEBASE_ACCESS_KEY,
+                    secretAccessKey: env.FILEBASE_SECRET_KEY,
+                },
+            });
+        }
     }
 
     /**
