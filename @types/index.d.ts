@@ -48,7 +48,6 @@ type User = {
         other?: string | null;
     };
     pending_usernames: {
-        username: string;
         address: string;
     }[];
 };

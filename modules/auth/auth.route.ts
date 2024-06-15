@@ -168,7 +168,7 @@ export default class AuthRoute extends AbstractRoutes {
 
         //# Github OAuth init
         this.router.get(`${this.path}/google`, async function (_: Request, res: Response) {
-            const url = githubSdk.authURL();
+            const url = googleSdk.authURL();
             return res.redirect(url);
         });
 

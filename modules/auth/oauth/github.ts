@@ -7,6 +7,7 @@ class GithubSdk implements OAuth {
 
     authURL() {
         const { GITHUB_CLIENT_ID, GITHUB_REDIRECT_URL } = env;
+        console.log(env);
 
         if (!GITHUB_CLIENT_ID) throw new Error('GITHUB_CLIENT_ID not set');
         if (!GITHUB_REDIRECT_URL) throw new Error('GITHUB_REDIRECT_URL not set');

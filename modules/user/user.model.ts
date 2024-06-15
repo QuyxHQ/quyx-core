@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema(
         },
         bio: {
             type: String,
-            default: null,
+            default: 'This user uses Quyx :-)',
         },
         address: {
             type: String,
@@ -77,11 +77,6 @@ const userSchema = new mongoose.Schema(
         },
         pending_usernames: [
             {
-                username: {
-                    type: String,
-                    required: true,
-                    unique: true,
-                },
                 address: {
                     type: String,
                     required: true,

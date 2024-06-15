@@ -7,6 +7,8 @@ import { Logger } from '../../shared/logger';
 import UserRepo from '../user/user.repo';
 import { get } from 'lodash';
 import isAuthorized from '../../shared/middleware/isAuthorized';
+import Client from '../../shared/Client';
+import { NftItem } from '../../contracts/tact_NftItem';
 
 const bookmarkRepo = new BookmarkRepo();
 const userRepo = new UserRepo();
@@ -116,5 +118,48 @@ export default class MiscRoute extends AbstractRoutes {
                 return res.status(500).json({ status: false, error: e.message });
             }
         });
+
+        this.router.put(
+            `${this.path}/update/:address`,
+            async function (req: Request, res: Response) {
+                try {
+                    const { address } = req.params;
+
+                    const client = await Client();
+
+                    const itemContract = client.open(NftItem.fromAddress(Address.parse(address)));
+                    const { max_bid_address } = await itemContract.getGetAuctionInfo();
+
+                    if (max_bid_address) {
+                        const [{ data: user }, existing_owner] = await Promise.all([
+                            userRepo.upsertUser(max_bid_address.toRawString()),
+                            userRepo.selectOne(
+                                {
+                                    'pending_usernames.address': address,
+                                },
+                                {},
+                                {
+                                    lean: true,
+                                }
+                            ),
+                        ]);
+
+                        if (existing_owner) {
+                            await userRepo.removePendingUsername(
+                                existing_owner._id as string,
+                                address
+                            );
+                        }
+
+                        if (user)
+                            await userRepo.addPendingUsername(user._id as string, [{ address }]);
+                    }
+
+                    return res.sendStatus(200);
+                } catch (e: any) {
+                    return res.sendStatus(500);
+                }
+            }
+        );
     }
 }
