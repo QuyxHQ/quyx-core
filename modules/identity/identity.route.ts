@@ -15,6 +15,7 @@ import {
 import { Logger } from '../../shared/logger';
 import { Address } from 'ton-core';
 import { getHashKey } from '../../shared/global';
+import env from '../../shared/env';
 
 export default class IdentityRoute extends AbstractRoutes {
     constructor(private repo: IdentityManagement, private storage: FileBase, router: Router) {
@@ -25,6 +26,8 @@ export default class IdentityRoute extends AbstractRoutes {
     public handle(): void {
         const repo = this.repo;
         const storage = this.storage;
+
+        if (env.IS_TESTNET) return;
 
         //# issue a credential
         this.router.post(

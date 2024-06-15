@@ -230,7 +230,7 @@ async function connectToWebSocket(url: string, client: TonClient, io: any) {
         });
 
         ws.on('close', (code, reason) => {
-            Logger.red(`WebSocket closed: ${code} - ${reason}`);
+            Logger.red(`WebSocket closed: ${code} - ${reason || 'nil'}`);
 
             if (code === 401) {
                 Logger.red('WebSocket connection closed with 401 Unauthorized. Retrying...');
@@ -245,7 +245,7 @@ export async function connectWithRetry(
     client: TonClient,
     io: any,
     maxRetries = 5,
-    delay = 2000
+    delay = 4000
 ) {
     let attempts = 0;
 

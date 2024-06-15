@@ -12,6 +12,7 @@ import {
     updateSpaceType,
 } from './space.schema';
 import { get } from 'lodash';
+import env from '../../shared/env';
 
 export default class SpaceRoute extends AbstractRoutes {
     constructor(private repo: SpaceRepo, router: Router) {
@@ -21,6 +22,8 @@ export default class SpaceRoute extends AbstractRoutes {
 
     public handle(): void {
         const repo = this.repo;
+
+        if (env.IS_TESTNET) return;
 
         this.router.post(
             `${this.path}/spaces`,

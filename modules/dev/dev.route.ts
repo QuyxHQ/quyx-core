@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import { AbstractRoutes } from '../../shared/abstract.routes';
 import isAuthorized from '../../shared/middleware/isAuthorized';
 import DevRepo from './dev.repo';
+import env from '../../shared/env';
 
 export default class DevRoute extends AbstractRoutes {
     constructor(private repo: DevRepo, router: Router) {
@@ -11,6 +12,8 @@ export default class DevRoute extends AbstractRoutes {
 
     public handle(): void {
         const repo = this.repo;
+
+        if (env.IS_TESTNET) return;
 
         //# gets the current dev
         this.router.get(
