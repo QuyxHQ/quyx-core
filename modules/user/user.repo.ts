@@ -8,6 +8,7 @@ import IdentityManagement from '../../shared/adapters/identity';
 import { Address } from 'ton-core';
 import { omit } from 'lodash';
 import { tonSdk } from '../../shared/adapters/tonapi/service';
+import env from '../../shared/env';
 
 export default class UserRepo extends BaseRepo<User, userDoc> {
     constructor(private storage = new FileBase(), private identity = new IdentityManagement()) {
@@ -45,7 +46,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
 
             const hash = await this.identity.hash(did);
 
-            const [result] = await Promise.all([
+            const fns = [
                 this.insert({
                     address: rawAddr,
                     hasBlueTick: false,
@@ -53,9 +54,10 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
                     did,
                     pending_usernames: [],
                 }),
-                this.storage.addFile(hash, []), // this will store the hash of all the user credentials
-            ]);
+                env.IS_TESTNET ? () => {} : this.storage.addFile(hash, []), // this will store the hash of all the user credentials
+            ];
 
+            const [result] = await Promise.all(fns);
             return { status: true, data: omit(result, 'tg') };
         } catch (e: any) {
             Logger.red(e);
