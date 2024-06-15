@@ -46,7 +46,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
 
             const hash = await this.identity.hash(did);
 
-            const fns = [
+            const [result] = await Promise.all([
                 this.insert({
                     address: rawAddr,
                     hasBlueTick: false,
@@ -55,9 +55,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
                     pending_usernames: [],
                 }),
                 env.IS_TESTNET ? () => {} : this.storage.addFile(hash, []), // this will store the hash of all the user credentials
-            ];
-
-            const [result] = await Promise.all(fns);
+            ]);
             return { status: true, data: omit(result, 'tg') };
         } catch (e: any) {
             Logger.red(e);
