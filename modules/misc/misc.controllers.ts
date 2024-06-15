@@ -16,10 +16,16 @@ export function getNftItemMetadata(req: Request, res: Response) {
     const { username } = req.params;
 
     const obj = {
-        name: `@${username}`,
+        name: username,
         description:
             'A part of Quyx username - the starting point of your decentralized identity management',
         image: `https://media.quyx.xyz/nft/${username}`,
+        buttons: [
+            {
+                label: 'Go to Quyx',
+                uri: 'https://quyx.xyz',
+            },
+        ],
         attributes: [
             {
                 trait_type: 'Length',
