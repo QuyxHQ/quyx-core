@@ -46,10 +46,10 @@ export default class AuthRoute extends AbstractRoutes {
                 const result = await userRepo.populateTGFields(user?._id!, {
                     id,
                     firstName: first_name,
-                    lastName: last_name,
-                    username,
-                    languageCode: language_code,
-                    photoUrl: photo_url,
+                    lastName: last_name || null,
+                    username: username || null,
+                    languageCode: language_code || null,
+                    photoUrl: photo_url || null,
                 });
 
                 return res.status(result.status ? 200 : 409).json(result);

@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema(
         },
         bio: {
             type: String,
-            default: 'Hi, I use uses Quyx!',
+            default: 'Hi, I use Quyx!',
         },
         address: {
             type: String,

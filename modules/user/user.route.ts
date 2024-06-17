@@ -58,11 +58,23 @@ export default class UserRoute extends AbstractRoutes {
             async function (_: Request, res: Response) {
                 const { user } = res.locals;
 
-                const result = await repo.getUser(user?._id!);
+                const result = await repo.getUser(user?._id!, false);
                 return res.status(200).json({
                     status: true,
                     data: result,
                 });
+            }
+        );
+
+        //# unlinks a user telegram account
+        this.router.delete(
+            `${this.path}/telegram`,
+            isAuthorized(),
+            async function (_: Request, res: Response) {
+                const { user } = res.locals;
+
+                const result = await repo.unlinkTGAccount(user?._id!);
+                return res.status(result.status ? 201 : 409).json(result);
             }
         );
 

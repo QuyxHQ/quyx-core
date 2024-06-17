@@ -91,6 +91,31 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         }
     }
 
+    async unlinkTGAccount(user: string) {
+        try {
+            // maybe send a last message to them that they are unlinking it
+            const result = await this.update(
+                { _id: user },
+                {
+                    tg: {
+                        id: null,
+                        username: null,
+                        firstName: null,
+                        lastName: null,
+                        languageCode: null,
+                        photoUrl: null,
+                    },
+                }
+            );
+
+            return { status: true, data: result };
+        } catch (e: any) {
+            Logger.red(e);
+
+            return { status: false, error: e.message };
+        }
+    }
+
     async updateUserInfo(user: string, input: Pick<User, 'username' | 'bio' | 'pfp' | 'socials'>) {
         try {
             const result = await this.update(
@@ -112,7 +137,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
     }
 
     // param = _id | username | address
-    async getUser(param: string) {
+    async getUser(param: string, hide = true) {
         const filter: Record<string, string>[] = [
             {
                 username: param,
@@ -127,7 +152,8 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         }
 
         const result = await this.selectOne({ $or: filter }, {}, { lean: true });
-        if (result) return omit(result, 'tg');
+        if (result && hide) return omit(result, 'tg');
+
         return result;
     }
 
