@@ -1,4 +1,4 @@
-import express, { Response, NextFunction } from 'express';
+import express, { Response, NextFunction, Request } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import * as Sentry from '@sentry/node';
@@ -6,11 +6,17 @@ import morgan from 'morgan';
 import fs from 'fs';
 import path from 'path';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
-import session from 'express-session';
 import routes from './routes';
 import env from '../shared/env';
 import deserializeUser from '../shared/middleware/deserializeUser';
 import { Logger } from '../shared/logger';
+import { get } from 'lodash';
+import SpaceRepo from '../modules/space/space.repo';
+import LogRepo from '../modules/log/log.repo';
+import { getLogAction } from '../shared/global';
+
+const spaceRepo = new SpaceRepo();
+const logRepo = new LogRepo();
 
 export default function createServer() {
     const app = express();
@@ -55,23 +61,54 @@ export default function createServer() {
                 'Accept',
                 'Authorization',
                 'X-Refresh',
+                'X-Dev-Token',
+                'Quyx-SK',
+                'Quyx-PK',
                 'cache',
             ],
             exposedHeaders: ['X-Access-Token'],
         })
     );
 
-    app.use(
-        session({
-            secret: env.SESSION_SECRET,
-            resave: false,
-            saveUninitialized: true,
-        })
-    );
-
     app.use((_, res: Response, next: NextFunction) => {
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
+
+        next();
+    });
+
+    app.use(async function (req: Request, res: Response, next: NextFunction) {
+        const pk = get(req.headers, 'quyx-pk', undefined);
+        const sk = get(req.headers, 'quyx-sk', undefined);
+        if (!pk && !sk) return next();
+
+        const space = await spaceRepo.selectOne(
+            {
+                ...(pk ? { 'keys.pk': pk } : { 'keys.sk': sk }),
+                isActive: true,
+            },
+            {},
+            {
+                lean: true,
+            }
+        );
+
+        if (!space) return next();
+        const start = Date.now();
+
+        res.on('finish', async () => {
+            const response_time = Date.now() - start;
+            const action = getLogAction(req.path);
+
+            await logRepo.addLog({
+                dev: space.owner,
+                response_time,
+                space: space._id as string,
+                status: res.statusCode < 400 ? 'successful' : 'failed',
+                action,
+                log: JSON.stringify({ body: req.body, query: req.query, params: req.params }),
+            });
+        });
 
         next();
     });

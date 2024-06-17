@@ -86,7 +86,7 @@ export default class SpaceRoute extends AbstractRoutes {
                 const { dev } = res.locals;
                 const { did } = req.params;
 
-                const result = await repo.updateSpaceURL(dev?._id!, did, req.body.url);
+                const result = await repo.updateSpace(dev?._id!, did, req.body);
                 return res.status(result.status ? 201 : 409).json(result);
             }
         );

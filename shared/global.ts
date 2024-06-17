@@ -27,6 +27,25 @@ type ParsedMessage = {
     StateInit: string;
 };
 
+export function getLogAction(path: string) {
+    if (path.substring(0, 17) == '/identity/permit/') return 'Accessed credential';
+    if (path.substring(0, 15) == '/identity/user/') return 'Get space user';
+
+    switch (path) {
+        case '/identity/issue-vc':
+            return 'Issue VC';
+
+        case '/identity/verify-vc':
+            return 'Verify VC';
+
+        case '/identity':
+            return 'Get users';
+
+        default:
+            return 'Unknown';
+    }
+}
+
 export function sleep(seconds: number) {
     return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }

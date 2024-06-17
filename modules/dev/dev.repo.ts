@@ -27,6 +27,6 @@ export default class DevRepo extends BaseRepo<Dev, devDoc> {
         const filter: Record<string, string | string>[] = [{ email: param }];
         if (mongoose.isValidObjectId(param)) filter.push({ _id: param });
 
-        return await this.selectOne(filter, {}, { lean: true });
+        return await this.selectOne({ $or: filter }, {}, { lean: true });
     }
 }

@@ -154,9 +154,8 @@ export default class AuthRoute extends AbstractRoutes {
                             );
                         }
 
-                        req.session.dev = result.data as unknown as Base & Dev;
-
-                        return res.redirect(`${env.DEV_BASE_URL}/oauth/callback/github`);
+                        const jwt = signJWT({ data: result.data?._id! }, { expiresIn: '1d' });
+                        return res.redirect(`${env.DEV_BASE_URL}/oauth/callback/github?jwt=${jwt}`);
                     } catch (e: any) {
                         Logger.red(e);
 
@@ -167,7 +166,7 @@ export default class AuthRoute extends AbstractRoutes {
                 }
             );
 
-            //# Github OAuth init
+            //# Google OAuth init
             this.router.get(`${this.path}/google`, async function (_: Request, res: Response) {
                 const url = googleSdk.authURL();
                 return res.redirect(url);
@@ -195,7 +194,7 @@ export default class AuthRoute extends AbstractRoutes {
                             email: user.email,
                             name: user.name.split(' ')[0],
                             picture: user.picture,
-                            provider: 'github',
+                            provider: 'google',
                         });
 
                         if (!result.status) {
@@ -204,9 +203,8 @@ export default class AuthRoute extends AbstractRoutes {
                             );
                         }
 
-                        req.session.dev = result.data as unknown as Base & Dev;
-
-                        return res.redirect(`${env.DEV_BASE_URL}/oauth/callback/google`);
+                        const jwt = signJWT({ data: result.data?._id! }, { expiresIn: '1d' });
+                        return res.redirect(`${env.DEV_BASE_URL}/oauth/callback/google?jwt=${jwt}`);
                     } catch (e: any) {
                         Logger.red(e);
 

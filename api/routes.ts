@@ -16,6 +16,8 @@ import BookmarkRoute from '../modules/bookmarks/bookmark.route';
 import BookmarkRepo from '../modules/bookmarks/bookmark.repo';
 import MiscRoute from '../modules/misc/misc.route';
 import { getCollectionMetadata, getNftItemMetadata } from '../modules/misc/misc.controllers';
+import LogRoute from '../modules/log/log.route';
+import LogRepo from '../modules/log/log.repo';
 
 function initRoutes(router: Router) {
     new AuthRoute(new AuthRepo(), router);
@@ -26,6 +28,7 @@ function initRoutes(router: Router) {
     new SpaceRoute(new SpaceRepo(), router);
     new BookmarkRoute(new BookmarkRepo(), router);
     new MiscRoute(router);
+    new LogRoute(new LogRepo(), router);
 }
 
 const routes = Router();

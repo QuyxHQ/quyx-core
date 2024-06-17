@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { get } from 'lodash';
 import SpaceRepo from '../../modules/space/space.repo';
+import DevRepo from '../../modules/dev/dev.repo';
+import { verifyJWT } from '../global';
 
 const spaceRepo = new SpaceRepo();
+const devRepo = new DevRepo();
 
 export default function (actor: ACTORS = 'user') {
     return async function (req: Request, res: Response, next: NextFunction) {
@@ -12,10 +15,17 @@ export default function (actor: ACTORS = 'user') {
                 return next();
 
             case 'dev':
-                const dev = get(req.session, 'dev', undefined);
+                const token = get(req.headers, 'x-dev-token', undefined);
+                if (!token) return res.sendStatus(401);
+                if (typeof token != 'string') return res.sendStatus(401);
+
+                const { decoded, expired } = verifyJWT(token);
+                if (expired || !decoded) return res.sendStatus(401);
+
+                const dev = await devRepo.findDev(decoded.data);
                 if (!dev) return res.sendStatus(401);
 
-                res.locals.dev = dev;
+                res.locals.dev = dev as any;
                 return next();
 
             case 'space:pk':

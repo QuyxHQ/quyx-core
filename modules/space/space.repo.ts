@@ -16,7 +16,7 @@ export default class SpaceRepo extends BaseRepo<Space, spaceDoc> {
 
     private async generateKeys() {
         const generate = (prefix: 'sk' | 'pk') => {
-            return `${prefix}_${nanoid(15)}`;
+            return `${prefix}_${nanoid(25)}`;
         };
 
         let pk = generate('pk');
@@ -81,17 +81,15 @@ export default class SpaceRepo extends BaseRepo<Space, spaceDoc> {
         }
     }
 
-    async updateSpaceURL(owner: string, space: string, url: string) {
+    async updateSpace(owner: string, did: string, input: Partial<Space>) {
         try {
             const result = await this.update(
                 {
-                    did: space,
+                    did,
                     owner,
                     isActive: true,
                 },
-                {
-                    url,
-                }
+                input
             );
 
             return { status: true, data: result };
@@ -147,7 +145,7 @@ export default class SpaceRepo extends BaseRepo<Space, spaceDoc> {
 
         return await this.selectOne(
             {
-                ...filter,
+                $or: filter,
                 isActive: true,
             },
             {},

@@ -1,5 +1,14 @@
 type ACTORS = 'user' | 'dev' | 'space:sk' | 'space:pk';
 
+type Log = {
+    space: string;
+    dev: string;
+    status: 'failed' | 'successful';
+    log: string | null;
+    action: string;
+    response_time: number;
+};
+
 type Bookmark = {
     user: string;
     address: string;

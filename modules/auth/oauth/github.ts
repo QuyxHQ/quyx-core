@@ -7,7 +7,6 @@ class GithubSdk implements OAuth {
 
     authURL() {
         const { GITHUB_CLIENT_ID, GITHUB_REDIRECT_URL } = env;
-        console.log(env);
 
         if (!GITHUB_CLIENT_ID) throw new Error('GITHUB_CLIENT_ID not set');
         if (!GITHUB_REDIRECT_URL) throw new Error('GITHUB_REDIRECT_URL not set');
@@ -43,22 +42,22 @@ class GithubSdk implements OAuth {
 
     async getUser(token: string): Promise<GitHubUser> {
         const client = new OAuthClient({
-            baseURL: 'https://api.github.com/user',
+            baseURL: 'https://api.github.com',
             headers: {
                 Authorization: `Bearer ${token}`,
             },
         });
 
-        const { data: user, error } = await client.getInstance().get('/');
+        const { data: user, error } = await client.getInstance().get('/user');
         if (error) throw new Error('Error: Unable to retrieve user github info');
 
         if (!user.email) {
-            const { error, data } = await client.getInstance().get('/emails');
+            const { error, data } = await client.getInstance().get('/user/emails');
             if (error) throw new Error('Error: Unable to complete onboarding with github');
 
-            user.email = data.find((item: any) => {
-                item.verified == true && item.primary == true;
-            })?.email;
+            user.email = data.find(
+                (item: any) => item.verified == true && item.primary == true
+            )?.email;
         }
 
         return user as GitHubUser;

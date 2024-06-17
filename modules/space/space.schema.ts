@@ -9,7 +9,8 @@ export const newSpaceSchema = z.object({
 
 export const updateSpaceSchema = z.object({
     body: z.strictObject({
-        url: z.string().url(),
+        name: z.string().min(4),
+        url: z.string().url().optional(),
     }),
 });
 
