@@ -32,7 +32,7 @@ export default class IdentityRoute extends AbstractRoutes {
         //# issue a credential
         this.router.post(
             `${this.path}/issue-vc`,
-            [isAuthorized(), isAuthorized('space:pk')],
+            isAuthorized(),
             validateSchema(issueCredentialSchema),
             async function (req: Request<{}, {}, issueCredentialType['body']>, res: Response) {
                 const { user } = res.locals;

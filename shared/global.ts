@@ -32,9 +32,6 @@ export function getLogAction(path: string) {
     if (path.substring(0, 15) == '/identity/user/') return 'Get space user';
 
     switch (path) {
-        case '/identity/issue-vc':
-            return 'Issue VC';
-
         case '/identity/verify-vc':
             return 'Verify VC';
 
