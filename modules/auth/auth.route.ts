@@ -114,10 +114,13 @@ export default class AuthRoute extends AbstractRoutes {
             //# login with telegram
             this.router.post(`${this.path}/telegram`, async function (req: Request, res: Response) {
                 const tg_init = get(req.body, 'tg_init', undefined);
+                console.log('Init:', tg_init);
                 if (!tg_init) return res.sendStatus(400);
 
                 const { status, error, data } = await repo.authenticationWithTG(tg_init);
-                if (!status) return res.status(400).json({ status, error });
+                if (!status) return res.status(409).json({ status, error });
+                console.log(data);
+                console.log(error);
 
                 const { id } = data!;
 
@@ -131,7 +134,9 @@ export default class AuthRoute extends AbstractRoutes {
                     }
                 );
 
-                if (!user) return res.sendStatus(409);
+                console.log(user);
+
+                if (!user) return res.sendStatus(422);
 
                 const session = await sessionRepo.createSession({
                     user: user._id! as string,
