@@ -27,7 +27,7 @@ export default class AuthRoute extends AbstractRoutes {
 
         //# login with telegram
         this.router.put(
-            `${this.path}/callback`,
+            `${this.path}/telegram/callback`,
             isAuthorized(),
             async function (req: Request, res: Response) {
                 const { user } = res.locals;
@@ -111,6 +111,57 @@ export default class AuthRoute extends AbstractRoutes {
         });
 
         if (!env.IS_TESTNET) {
+            //# login with telegram
+            this.router.post(`${this.path}/telegram`, async function (req: Request, res: Response) {
+                const tg_init = get(req.body, 'tg_init', undefined);
+                if (!tg_init) return res.sendStatus(400);
+
+                const { status, error, data } = await repo.authenticationWithTG(tg_init);
+                if (!status) return res.status(400).json({ status, error });
+
+                const { id } = data!;
+
+                const user = await userRepo.selectOne(
+                    {
+                        'tg.id': id,
+                    },
+                    {},
+                    {
+                        lean: true,
+                    }
+                );
+
+                if (!user) return res.sendStatus(409);
+
+                const session = await sessionRepo.createSession({
+                    user: user._id! as string,
+                    device: req.get('user-agent') || null,
+                });
+
+                const payload = {
+                    data: {
+                        user,
+                        session: session.data,
+                    },
+                };
+
+                const accessToken = signJWT(payload, {
+                    expiresIn: env.ACCESS_TOKEN_TTL,
+                });
+
+                const refreshToken = signJWT(payload, {
+                    expiresIn: env.REFRESH_TOKEN_TTL,
+                });
+
+                return res.status(200).json({
+                    status: true,
+                    data: {
+                        accessToken,
+                        refreshToken,
+                    },
+                });
+            });
+
             //# Github OAuth init
             this.router.get(`${this.path}/github`, async function (_: Request, res: Response) {
                 const url = githubSdk.authURL();
