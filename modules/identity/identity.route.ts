@@ -16,6 +16,7 @@ import { Logger } from '../../shared/logger';
 import { Address } from 'ton-core';
 import { getHashKey } from '../../shared/global';
 import env from '../../shared/env';
+import { tonSdk } from '../../shared/adapters/tonapi/service';
 
 export default class IdentityRoute extends AbstractRoutes {
     constructor(private repo: IdentityManagement, private storage: FileBase, router: Router) {
@@ -39,6 +40,15 @@ export default class IdentityRoute extends AbstractRoutes {
                 const { payload, expires } = req.body;
 
                 try {
+                    const { nft_items } = await tonSdk.getUserUsernames(user?.address!, 1, 1000);
+                    const usernames = nft_items.map((item) => item.metadata.name) as string[];
+                    if ('username' in payload && !usernames.includes(payload.username as string)) {
+                        return res.status(403).json({
+                            status: false,
+                            error: 'Username not found to belong to this address!',
+                        });
+                    }
+
                     const result = await repo.issueCredential(
                         user?.did!,
                         {
@@ -181,8 +191,8 @@ export default class IdentityRoute extends AbstractRoutes {
                             const vc = (await storage.readContentFromFile(gateway)) as VCFileObject;
                             await redis.set(key, vc);
 
-                            const payload = await repo.verifyCredential(vc.jwt);
-                            return { ...vc, payload };
+                            const credential = await repo.verifyCredential(vc.jwt);
+                            return { ...vc, credential };
                         } catch (e: any) {
                             return;
                         }
@@ -347,24 +357,26 @@ export default class IdentityRoute extends AbstractRoutes {
         );
 
         //# get a data from hash
-        this.router.get(`${this.router}/:hash`, async function (req: Request, res: Response) {
+        this.router.get(`${this.path}/:hash`, async function (req: Request, res: Response) {
             try {
                 const { hash } = req.params;
                 const revalidate = get(req.query, 'revalidate', 'no');
 
                 const key = getHashKey(hash);
 
-                const cache = await redis.get(key);
+                const cache = (await redis.get(key)) as VCFileObject;
                 if (cache && revalidate === 'no') {
-                    return res.status(200).json({ status: true, data: cache });
+                    const credential = await repo.verifyCredential(cache.jwt);
+                    return res.status(200).json({ status: true, data: { ...cache, credential } });
                 }
 
                 const { gateway } = await storage.getFile(hash);
-                const data = await storage.readContentFromFile(gateway);
+                const data = (await storage.readContentFromFile(gateway)) as VCFileObject;
+                const credential = await repo.verifyCredential(data.jwt);
 
                 await redis.set(key, data);
 
-                return res.status(200).json({ status: true, data });
+                return res.status(200).json({ status: true, data: { ...data, credential } });
             } catch (e: any) {
                 Logger.red(e);
 
