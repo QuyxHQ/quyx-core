@@ -162,21 +162,30 @@ export default class IdentityRoute extends AbstractRoutes {
                         await redis.set(key, userFileContent);
                     }
 
-                    const HASHES = userFileContent.splice(skip, skip + limit);
+                    const total = userFileContent.length;
+                    const HASHES = userFileContent.reverse().splice(skip, skip + limit);
 
                     const fn = HASHES.map(async (hash) => {
-                        const key = getHashKey(hash);
-                        const hashCache = await redis.get(key);
+                        try {
+                            const key = getHashKey(hash);
+                            const hashCache = await redis.get(key);
 
-                        if (hashCache && revalidate === 'no') {
-                            return hashCache as VCFileObject;
+                            if (hashCache && revalidate === 'no') {
+                                const vc = hashCache as VCFileObject;
+                                const credential = await repo.verifyCredential(vc.jwt);
+
+                                return { ...vc, credential };
+                            }
+
+                            const { gateway } = await storage.getFile(hash);
+                            const vc = (await storage.readContentFromFile(gateway)) as VCFileObject;
+                            await redis.set(key, vc);
+
+                            const payload = await repo.verifyCredential(vc.jwt);
+                            return { ...vc, payload };
+                        } catch (e: any) {
+                            return;
                         }
-
-                        const { gateway } = await storage.getFile(hash);
-                        const vc = (await storage.readContentFromFile(gateway)) as VCFileObject;
-                        await redis.set(key, vc);
-
-                        return vc;
                     });
 
                     const data = await Promise.all(fn);
@@ -186,8 +195,8 @@ export default class IdentityRoute extends AbstractRoutes {
                         data: {
                             page,
                             limit,
-                            total: userFileContent.length,
-                            data,
+                            total,
+                            data: data.filter((item) => item != undefined),
                         },
                     });
                 } catch (e: any) {
@@ -229,25 +238,37 @@ export default class IdentityRoute extends AbstractRoutes {
                         await redis.set(key, spaceFileContent);
                     }
 
+                    const total = spaceFileContent.hashes.length;
                     const HASHES = spaceFileContent.hashes.splice(skip, skip + limit);
 
                     const fn = HASHES.map(async (hash) => {
-                        const key = getHashKey(hash);
-                        const hashCache = await redis.get(key);
+                        try {
+                            const key = getHashKey(hash);
+                            const hashCache = await redis.get(key);
 
-                        if (hashCache && revalidate === 'no') {
-                            const content = hashCache as VCFileObject;
-                            const credential = await repo.getCredential(content.jwt);
+                            if (hashCache && revalidate === 'no') {
+                                const content = hashCache as VCFileObject;
+                                if (content.revoked) return;
 
-                            return credential.payload.credentialSubject as any;
+                                const credential = await repo.getCredential(content.jwt);
+                                if (!credential.verified) return;
+
+                                return credential;
+                            }
+
+                            const { gateway } = await storage.getFile(hash);
+                            const vc = (await storage.readContentFromFile(gateway)) as VCFileObject;
+                            if (vc.revoked) return;
+
+                            await redis.set(key, vc);
+
+                            const credential = await repo.getCredential(vc.jwt);
+                            if (!credential.verified) return;
+
+                            return credential;
+                        } catch (e: any) {
+                            return;
                         }
-
-                        const { gateway } = await storage.getFile(hash);
-                        const vc = (await storage.readContentFromFile(gateway)) as VCFileObject;
-                        await redis.set(key, vc);
-
-                        const credential = await repo.getCredential(vc.jwt);
-                        return credential.payload.credentialSubject as any;
                     });
 
                     const data = await Promise.all(fn);
@@ -257,8 +278,8 @@ export default class IdentityRoute extends AbstractRoutes {
                         data: {
                             page,
                             limit,
-                            total: spaceFileContent.hashes.length,
-                            data,
+                            total,
+                            data: data.filter((item) => item != undefined),
                         },
                     });
                 } catch (e: any) {
@@ -314,9 +335,9 @@ export default class IdentityRoute extends AbstractRoutes {
                     }
 
                     const credential = await repo.getCredential(vc.jwt);
-                    const payload = credential.payload.credentialSubject;
+                    if (!credential.verified) return res.sendStatus(409);
 
-                    return res.status(200).json({ status: true, data: payload });
+                    return res.status(200).json({ status: true, data: credential });
                 } catch (e: any) {
                     Logger.red(e);
 

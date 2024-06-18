@@ -95,7 +95,7 @@ export default class IdentityManagement {
         const vc: JwtCredentialPayload = {
             sub: subject,
             nbf: Math.floor(Date.now() / 1000),
-            exp: expires,
+            exp: expires ? Math.floor(expires / 1000) : undefined,
             vc: {
                 '@context': ['https://www.w3.org/2018/credentials/v1'],
                 type: ['VerifiableCredential'],
@@ -187,7 +187,7 @@ export default class IdentityManagement {
         const vc = await verifyCredential(jwt, resolver as any);
         if (!vc.verified) throw new Error('Credential could not be verified');
 
-        return vc.payload.credentialSubject;
+        return vc.verifiableCredential;
     }
 
     /**
