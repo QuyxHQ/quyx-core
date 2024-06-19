@@ -137,7 +137,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
     }
 
     // param = _id | username | address
-    async getUser(param: string, hide = true) {
+    async getUser(param: string, omit_tg = true) {
         const filter: Record<string, string>[] = [
             {
                 username: param,
@@ -152,7 +152,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         }
 
         const result = await this.selectOne({ $or: filter }, {}, { lean: true });
-        if (result && hide) return omit(result, 'tg');
+        if (result && omit_tg) return omit(result, 'tg');
 
         return result;
     }

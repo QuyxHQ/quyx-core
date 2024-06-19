@@ -11,10 +11,12 @@ import { githubSdk } from './oauth/github';
 import { googleSdk } from './oauth/google';
 import DevRepo from '../dev/dev.repo';
 import { Logger } from '../../shared/logger';
+import TelegramMessaging from '../../shared/adapters/telegram/messaging';
 
 const userRepo = new UserRepo();
 const sessionRepo = new SessionRepo();
 const devRepo = new DevRepo();
+const tgSdk = new TelegramMessaging();
 
 export default class AuthRoute extends AbstractRoutes {
     constructor(private repo: AuthRepo, router: Router) {
@@ -51,6 +53,8 @@ export default class AuthRoute extends AbstractRoutes {
                     languageCode: language_code || null,
                     photoUrl: photo_url || null,
                 });
+
+                if (result.status) await tgSdk.sendWelcomMessage(id);
 
                 return res.status(result.status ? 200 : 409).json(result);
             }

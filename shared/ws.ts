@@ -85,8 +85,6 @@ async function connectToWebSocket(url: string, client: TonClient, io: any) {
                 ) {
                     if (!tx.out_msgs || tx.out_msgs.length == 0) return;
 
-                    console.log(tx.out_msgs);
-
                     const log = tx.out_msgs.find((msg) => msg.op_code == '0x71e6098a');
                     if (!log) return;
 
@@ -119,7 +117,7 @@ async function connectToWebSocket(url: string, client: TonClient, io: any) {
                             await sleep(2);
                         }
 
-                        const runAt = Number(auction.end_time.toString()) * 100;
+                        const runAt = Number(auction.end_time.toString()) * 1000;
 
                         // set a cron job to stop it at the end time
                         await agenda.schedule(new Date(runAt), 'mp-auction', {
@@ -175,7 +173,7 @@ async function connectToWebSocket(url: string, client: TonClient, io: any) {
 
                     const user = await userRepo.upsertUser(source?.address!);
 
-                    const runAt = Number(auctionInfo.auction_end_time.toString()) * 100;
+                    const runAt = Number(auctionInfo.auction_end_time.toString()) * 1000;
                     await agenda.schedule(new Date(runAt), 'auction', {
                         username,
                         index: index.toString(),

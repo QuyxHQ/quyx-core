@@ -13,6 +13,7 @@ import { sleep } from './shared/global';
 import wallet from './shared/wallet';
 import { AuctionContract } from './contracts/tact_AuctionContract';
 import { connectWithRetry } from './shared/ws';
+import bot from './shared/adapters/telegram/bot';
 
 const userRepo = new UserRepo();
 
@@ -46,8 +47,8 @@ const userRepo = new UserRepo();
 
             try {
                 const itemContract = client.open(NftItem.fromAddress(Address.parse(address)));
-                const { max_bid_address, auction_end_time } =
-                    await itemContract.getGetAuctionInfo();
+                const data = await itemContract.getGetAuctionInfo();
+                const { max_bid_address, auction_end_time } = data;
 
                 if (max_bid_address != null) {
                     // auction has not ended
@@ -121,6 +122,39 @@ const userRepo = new UserRepo();
         });
 
         await agenda.start();
+
+        if (bot) {
+            bot.onText(/\/start/, (msg) => {
+                const chatId = msg.chat.id;
+
+                const name = msg.from
+                    ? msg.from.username
+                        ? msg.from.username
+                        : msg.from.first_name
+                    : 'User';
+
+                const message = `Hi 👋, @${name}.\n\n🎉 Welcome to Quyx, TON's first social identity protocol.\n\nLFG!! 🔥`;
+
+                const opts = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: 'Launch App',
+                                    web_app: { url: 'https://tma.quyx.xyz' },
+                                },
+                                {
+                                    text: 'My Profile',
+                                    web_app: { url: 'https://tma.quyx.xyz/profile' },
+                                },
+                            ],
+                        ],
+                    },
+                };
+
+                if (bot) bot.sendMessage(chatId, message, opts as any);
+            });
+        }
 
         httpServer.listen(
             {

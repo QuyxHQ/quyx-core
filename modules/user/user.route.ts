@@ -10,8 +10,10 @@ import { Address } from 'ton-core';
 import { Logger } from '../../shared/logger';
 import { isValidAddress } from '../../shared/global';
 import BookmarkRepo from '../bookmarks/bookmark.repo';
+import TelegramMessaging from '../../shared/adapters/telegram/messaging';
 
 const bookmarkRepo = new BookmarkRepo();
+const tgSdk = new TelegramMessaging();
 
 export default class UserRoute extends AbstractRoutes {
     constructor(private repo: UserRepo, router: Router) {
@@ -74,6 +76,8 @@ export default class UserRoute extends AbstractRoutes {
                 const { user } = res.locals;
 
                 const result = await repo.unlinkTGAccount(user?._id!);
+                if (result.status) await tgSdk.sendUnlinkTGMessage(user?.tg?.id!);
+
                 return res.status(result.status ? 201 : 409).json(result);
             }
         );

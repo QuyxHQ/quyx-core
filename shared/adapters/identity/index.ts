@@ -27,7 +27,7 @@ export type SpaceFileObject = {
 };
 
 export default class IdentityManagement {
-    constructor(private storage: FileBase = new FileBase(), private Redis: typeof redis = redis) {}
+    constructor(private storage: FileBase = new FileBase(), private cache: typeof redis = redis) {}
 
     private generateRandomKey() {
         const buffer = crypto.randomBytes(32);
@@ -113,8 +113,7 @@ export default class IdentityManagement {
         };
 
         const jwt = await createVerifiableCredentialJwt(vc, Issuer);
-        const hash = await this.hash(jwt);
-        const subjectHash = await this.hash(subject);
+        const [hash, subjectHash] = await Promise.all([this.hash(jwt), this.hash(subject)]);
 
         const { gateway } = await this.storage.getFile(subjectHash);
         const data = (await this.storage.readContentFromFile(gateway)) as string[];
@@ -128,7 +127,7 @@ export default class IdentityManagement {
                 spaces: [],
             }),
             this.storage.addFile(subjectHash, data),
-            this.Redis.set(getHashKey(subjectHash), data),
+            this.cache.set(getHashKey(subjectHash), data),
         ]);
 
         return { jwt, hash, urls };
@@ -178,13 +177,7 @@ export default class IdentityManagement {
         const isRevoked = await this.isVCRevoked(hash);
         if (isRevoked) throw new Error('Credential has been revoked');
 
-        const resolver = {
-            resolve: async (did: string) => {
-                return await this.resolveDID(did);
-            },
-        };
-
-        const vc = await verifyCredential(jwt, resolver as any);
+        const vc = await this.getCredential(jwt);
         if (!vc.verified) throw new Error('Credential could not be verified');
 
         return vc.verifiableCredential;
@@ -209,6 +202,7 @@ export default class IdentityManagement {
         ]);
 
         let vc = _vc as VCFileObject;
+        if (vc.subject != subject) throw new Error('Error: Unauthorized to perform action');
         if (vc.revoked) throw new Error('Error: This credential has been revoked');
         if (vc.spaces.includes(subject)) return;
 
@@ -226,8 +220,8 @@ export default class IdentityManagement {
         space.hashes.push(hash);
 
         await Promise.all([
-            this.Redis.set(getHashKey(hash), vc),
-            this.Redis.set(getHashKey(spaceHash), space),
+            this.cache.set(getHashKey(hash), vc),
+            this.cache.set(getHashKey(spaceHash), space),
             this.storage.addFile(hash, vc),
             this.storage.addFile(spaceHash, space),
         ]);
@@ -236,14 +230,15 @@ export default class IdentityManagement {
     /**
      * Revokes space access to a credential
      * @param  {string} hash - JWT hash
-     * @param  {string} subject - DID of space
+     * @param  {string} subject - DID of user
+     * @param  {string} space_did - DID of space
      **/
-    async revokeSpaceAccess(hash: string, subject: string) {
-        const subjectHash = await this.hash(subject);
+    async revokeSpaceAccess(hash: string, subject: string, space_did: string) {
+        const spaceHash = await this.hash(space_did);
 
         const [{ gateway: vc_gateway }, { gateway: space_gateway }] = await Promise.all([
             this.storage.getFile(hash),
-            this.storage.getFile(subjectHash),
+            this.storage.getFile(spaceHash),
         ]);
 
         const [_vc, _space] = await Promise.all([
@@ -252,10 +247,11 @@ export default class IdentityManagement {
         ]);
 
         let vc = _vc as VCFileObject;
+        if (vc.subject != subject) throw new Error('Error: Unauthorized to perform action');
         if (vc.revoked) throw new Error('Error: This credential has been revoked');
-        if (!vc.spaces.includes(subject)) return;
+        if (!vc.spaces.includes(space_did)) return;
 
-        vc.spaces.splice(vc.spaces.indexOf(subject), 1);
+        vc.spaces.splice(vc.spaces.indexOf(space_did), 1);
 
         let space = _space as SpaceFileObject; // array of hash the space has access to
         if (!space.hashes.includes(hash)) return;
@@ -264,10 +260,10 @@ export default class IdentityManagement {
         space.hashes.splice(space.hashes.indexOf(hash), 1);
 
         await Promise.all([
-            this.Redis.set(getHashKey(hash), vc),
-            this.Redis.set(getHashKey(subjectHash), space),
+            this.cache.set(getHashKey(hash), vc),
             this.storage.addFile(hash, vc),
-            this.storage.addFile(subjectHash, space),
+            this.cache.set(getHashKey(spaceHash), space),
+            this.storage.addFile(spaceHash, space),
         ]);
     }
 
@@ -275,9 +271,10 @@ export default class IdentityManagement {
      * Revokes a credential
      * @param  {string} hash - JWT hash
      **/
-    async revoke(hash: string) {
+    async revoke(hash: string, subject: string) {
         const { gateway } = await this.storage.getFile(hash);
         const data = (await this.storage.readContentFromFile(gateway)) as VCFileObject;
+        if (data.subject != subject) throw new Error('Error: Unauthorized to perform action');
         if (data.revoked) return;
 
         if (data.spaces.length > 0) {
@@ -295,7 +292,7 @@ export default class IdentityManagement {
 
                 await Promise.all([
                     this.storage.addFile(space_hash, space),
-                    this.Redis.set(getHashKey(space_hash), space),
+                    this.cache.set(getHashKey(space_hash), space),
                 ]);
             });
 
@@ -304,9 +301,17 @@ export default class IdentityManagement {
 
         data.revoked = true;
 
+        // remove this hash from the user hashes
+        const subjectHash = await this.hash(subject);
+        const { gateway: subject_gateway } = await this.storage.getFile(subjectHash);
+        const subjectData = (await this.storage.readContentFromFile(subject_gateway)) as string[];
+        if (subjectData.includes(hash)) subjectData.splice(subjectData.indexOf(hash), 1);
+
         await Promise.all([
             this.storage.addFile(hash, data),
-            this.Redis.set(getHashKey(hash), data),
+            this.cache.set(getHashKey(hash), data),
+            this.storage.addFile(subjectHash, subjectData),
+            this.cache.set(getHashKey(subjectHash), subjectData),
         ]);
     }
 }

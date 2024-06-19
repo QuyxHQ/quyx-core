@@ -16,7 +16,7 @@ export default async function (req: Request, res: Response, next: NextFunction) 
     const { decoded, expired } = verifyJWT(accessToken);
 
     if (decoded) {
-        const user = await userRepo.getUser(decoded.data?.user._id);
+        const user = await userRepo.getUser(decoded.data?.user._id, false);
         res.locals.user = user as any;
         res.locals.session = decoded.data?.session;
 

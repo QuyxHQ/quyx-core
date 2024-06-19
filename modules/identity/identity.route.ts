@@ -17,6 +17,11 @@ import { Address } from 'ton-core';
 import { getHashKey } from '../../shared/global';
 import env from '../../shared/env';
 import { tonSdk } from '../../shared/adapters/tonapi/service';
+import TelegramMessaging from '../../shared/adapters/telegram/messaging';
+import SpaceRepo from '../space/space.repo';
+
+const tgSdk = new TelegramMessaging();
+const spaceRepo = new SpaceRepo();
 
 export default class IdentityRoute extends AbstractRoutes {
     constructor(private repo: IdentityManagement, private storage: FileBase, router: Router) {
@@ -92,10 +97,15 @@ export default class IdentityRoute extends AbstractRoutes {
             [isAuthorized(), isAuthorized('space:pk')],
             async function (req: Request, res: Response) {
                 try {
-                    const { space } = res.locals;
+                    const { space, user } = res.locals;
                     const { hash } = req.params;
 
                     await repo.permitSpace(hash, space?.did!);
+
+                    if (user?.tg && user.tg.id) {
+                        await tgSdk.sendPermittedSpaceMessage(user.tg.id, hash, space!);
+                    }
+
                     return res.status(201).json({ status: true });
                 } catch (e: any) {
                     Logger.red(e);
@@ -112,8 +122,15 @@ export default class IdentityRoute extends AbstractRoutes {
             async function (req: Request, res: Response) {
                 try {
                     const { did, hash } = req.params;
+                    const { user } = res.locals;
 
-                    await repo.revokeSpaceAccess(hash, did);
+                    await repo.revokeSpaceAccess(hash, user?.did!, did);
+
+                    if (user?.tg && user.tg.id) {
+                        const space = await spaceRepo.getSpace(did);
+                        if (space) await tgSdk.sendRevokedSpaceMessage(user.tg.id, hash, space);
+                    }
+
                     return res.status(201).json({ status: true });
                 } catch (e: any) {
                     Logger.red(e);
@@ -129,9 +146,15 @@ export default class IdentityRoute extends AbstractRoutes {
             isAuthorized(),
             async function (req: Request, res: Response) {
                 try {
+                    const { user } = res.locals;
                     const { hash } = req.params;
 
-                    await repo.revoke(hash);
+                    await repo.revoke(hash, user?.did!);
+
+                    if (user?.tg && user.tg.id) {
+                        await tgSdk.sendRevokedCredentialMessage(user.tg.id, hash);
+                    }
+
                     return res.status(201).json({ status: true });
                 } catch (e: any) {
                     Logger.red(e);
@@ -340,7 +363,7 @@ export default class IdentityRoute extends AbstractRoutes {
                     }
 
                     if (vc.revoked) {
-                        await repo.revokeSpaceAccess(hash, space?.did!);
+                        await repo.revokeSpaceAccess(hash, did, space?.did!);
                         return res.sendStatus(404);
                     }
 
