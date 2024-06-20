@@ -1,4 +1,7 @@
 import { Request, Response, Router } from 'express';
+import mailchimp from '@mailchimp/mailchimp_marketing';
+import { z } from 'zod';
+import md5 from 'md5';
 import { AbstractRoutes } from '../../shared/abstract.routes';
 import BookmarkRepo from '../bookmarks/bookmark.repo';
 import { tonSdk } from '../../shared/adapters/tonapi/service';
@@ -9,9 +12,16 @@ import { get } from 'lodash';
 import isAuthorized from '../../shared/middleware/isAuthorized';
 import Client from '../../shared/Client';
 import { NftItem } from '../../contracts/tact_NftItem';
+import env from '../../shared/env';
+import validateSchema from '../../shared/middleware/validateSchema';
 
 const bookmarkRepo = new BookmarkRepo();
 const userRepo = new UserRepo();
+
+mailchimp.setConfig({
+    apiKey: env.MAILCHIMP_API_KEY,
+    server: 'us13',
+});
 
 export default class MiscRoute extends AbstractRoutes {
     constructor(router: Router) {
@@ -20,6 +30,33 @@ export default class MiscRoute extends AbstractRoutes {
     }
 
     public handle(): void {
+        //# subscribe to newsletter
+        this.router.post(
+            `${this.path}/subscribe`,
+            validateSchema(
+                z.object({
+                    body: z.strictObject({
+                        email: z.string().email(),
+                    }),
+                })
+            ),
+            async function (req: Request, res: Response) {
+                const { email } = req.body;
+
+                try {
+                    const hash = md5(email);
+                    await mailchimp.lists.setListMember('76fd6c1477', hash, {
+                        email_address: email,
+                        status_if_new: 'subscribed',
+                    });
+
+                    return res.sendStatus(201);
+                } catch (e: any) {
+                    return res.sendStatus(500);
+                }
+            }
+        );
+
         //# upload image
         this.router.post(
             `${this.path}/upload`,

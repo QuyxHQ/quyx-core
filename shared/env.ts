@@ -30,6 +30,7 @@ let {
     MARKETPLACE_ADDR,
     TON_WEBSOCKET_URL,
     MNEMONIC,
+    MAILCHIMP_API_KEY,
 } = process.env;
 
 NETWORK = NETWORK == 'mainnet' ? NETWORK : 'testnet';
@@ -81,4 +82,5 @@ export default {
     MARKETPLACE_ADDR,
     TON_WEBSOCKET_URL,
     MNEMONIC,
+    MAILCHIMP_API_KEY,
 };
