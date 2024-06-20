@@ -43,6 +43,8 @@ export default class MiscRoute extends AbstractRoutes {
             async function (req: Request, res: Response) {
                 const { email } = req.body;
 
+                if (env.IS_TESTNET) return res.sendStatus(422);
+
                 try {
                     const hash = md5(email);
                     await mailchimp.lists.setListMember('76fd6c1477', hash, {
