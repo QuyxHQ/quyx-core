@@ -45,14 +45,14 @@ export default class IdentityRoute extends AbstractRoutes {
                 const { payload, expires } = req.body;
 
                 try {
-                    const { nft_items } = await tonSdk.getUserUsernames(user?.address!, 1, 1000);
-                    const usernames = nft_items.map((item) => item.metadata.name) as string[];
-                    if ('username' in payload && !usernames.includes(payload.username as string)) {
-                        return res.status(403).json({
-                            status: false,
-                            error: 'Username not found to belong to this address!',
-                        });
-                    }
+                    // const { nft_items } = await tonSdk.getUserUsernames(user?.address!, 1, 1000);
+                    // const usernames = nft_items.map((item) => item.metadata.name) as string[];
+                    // if ('username' in payload && !usernames.includes(payload.username as string)) {
+                    //     return res.status(403).json({
+                    //         status: false,
+                    //         error: 'Username not found to belong to this address!',
+                    //     });
+                    // }
 
                     const result = await repo.issueCredential(
                         user?.did!,
