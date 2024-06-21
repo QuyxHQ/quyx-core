@@ -75,7 +75,7 @@ export default class IdentityRoute extends AbstractRoutes {
         //# verify a credential
         this.router.post(
             `${this.path}/verify-vc`,
-            isAuthorized('space:pk'),
+            isAuthorized(['space:pk', 'space:sk']),
             validateSchema(verifyCredentialSchema),
             async function (req: Request<{}, {}, verifyCredentialType['body']>, res: Response) {
                 try {
@@ -326,7 +326,7 @@ export default class IdentityRoute extends AbstractRoutes {
         //# get a user credential in a space
         this.router.get(
             `${this.path}/user/:did`,
-            isAuthorized('space:sk'),
+            isAuthorized(['space:pk', 'space:sk']),
             async function (req: Request, res: Response) {
                 try {
                     const { space } = res.locals;

@@ -25,6 +25,17 @@ export default class SpaceRoute extends AbstractRoutes {
 
         if (env.IS_TESTNET) return;
 
+        this.router.get(
+            `${this.path}/space-info`,
+            isAuthorized(['space:pk', 'space:sk']),
+            async function (_: Request, res: Response) {
+                const { space } = res.locals;
+                if (!space) return res.sendStatus(404);
+
+                return res.status(200).json({ status: true, data: space });
+            }
+        );
+
         this.router.post(
             `${this.path}/spaces`,
             isAuthorized(),

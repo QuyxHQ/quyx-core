@@ -7,8 +7,30 @@ import { verifyJWT } from '../global';
 const spaceRepo = new SpaceRepo();
 const devRepo = new DevRepo();
 
-export default function (actor: ACTORS = 'user') {
+export default function (actor: ACTORS | ACTORS[] = 'user') {
     return async function (req: Request, res: Response, next: NextFunction) {
+        if (Array.isArray(actor)) {
+            const pk = get(req.headers, 'quyx-pk', undefined);
+            const sk = get(req.headers, 'quyx-sk', undefined);
+            if (!pk && !sk) return res.sendStatus(401);
+
+            const space = await spaceRepo.selectOne(
+                {
+                    ...(pk ? { 'keys.pk': pk } : { 'keys.sk': sk }),
+                    isActive: true,
+                },
+                {},
+                {
+                    lean: true,
+                }
+            );
+
+            if (!space) return res.sendStatus(401);
+
+            res.locals.space = space;
+            return next();
+        }
+
         switch (actor) {
             case 'user':
                 if (!res.locals.user || !res.locals.session) return res.sendStatus(401);
