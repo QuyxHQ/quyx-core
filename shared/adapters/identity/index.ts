@@ -188,8 +188,8 @@ export default class IdentityManagement {
      * @param  {string} hash - JWT hash
      * @param  {string} subject - DID of space
      **/
-    async permitSpace(hash: string, subject: string) {
-        const spaceHash = await this.hash(subject);
+    async permitSpace(hash: string, subject: string, spaceSubject: string) {
+        const spaceHash = await this.hash(spaceSubject);
 
         const [{ gateway: vc_gateway }, { gateway: space_gateway }] = await Promise.all([
             this.storage.getFile(hash),
@@ -204,9 +204,9 @@ export default class IdentityManagement {
         let vc = _vc as VCFileObject;
         if (vc.subject != subject) throw new Error('Error: Unauthorized to perform action');
         if (vc.revoked) throw new Error('Error: This credential has been revoked');
-        if (vc.spaces.includes(subject)) return;
+        if (vc.spaces.includes(spaceSubject)) return;
 
-        vc.spaces.push(subject);
+        vc.spaces.push(spaceSubject);
 
         let space = _space as SpaceFileObject; // array of hash the space has access to
         if (space.hashes.includes(hash)) return;

@@ -100,7 +100,7 @@ export default class IdentityRoute extends AbstractRoutes {
                     const { space, user } = res.locals;
                     const { hash } = req.params;
 
-                    await repo.permitSpace(hash, space?.did!);
+                    await repo.permitSpace(hash, user?.did!, space?.did!);
 
                     if (user?.tg && user.tg.id) {
                         await tgSdk.sendPermittedSpaceMessage(user.tg.id, hash, space!);
