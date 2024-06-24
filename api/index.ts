@@ -100,14 +100,16 @@ export default function createServer() {
             const response_time = Date.now() - start;
             const action = getLogAction(req.path);
 
-            await logRepo.addLog({
-                dev: space.owner,
-                response_time,
-                space: space._id as string,
-                status: res.statusCode < 400 ? 'successful' : 'failed',
-                action,
-                log: JSON.stringify({ body: req.body, query: req.query, params: req.params }),
-            });
+            if (action) {
+                await logRepo.addLog({
+                    dev: space.owner,
+                    response_time,
+                    space: space._id as string,
+                    status: res.statusCode < 400 ? 'successful' : 'failed',
+                    action,
+                    log: JSON.stringify({ body: req.body, query: req.query, params: req.params }),
+                });
+            }
         });
 
         next();

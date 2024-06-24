@@ -14,14 +14,16 @@ import {
 } from './identity.schema';
 import { Logger } from '../../shared/logger';
 import { Address } from 'ton-core';
-import { getHashKey } from '../../shared/global';
+import { getHashKey, isValidAddress } from '../../shared/global';
 import env from '../../shared/env';
 import { tonSdk } from '../../shared/adapters/tonapi/service';
 import TelegramMessaging from '../../shared/adapters/telegram/messaging';
 import SpaceRepo from '../space/space.repo';
+import UserRepo from '../user/user.repo';
 
 const tgSdk = new TelegramMessaging();
 const spaceRepo = new SpaceRepo();
+const userRepo = new UserRepo();
 
 export default class IdentityRoute extends AbstractRoutes {
     constructor(private repo: IdentityManagement, private storage: FileBase, router: Router) {
@@ -330,8 +332,15 @@ export default class IdentityRoute extends AbstractRoutes {
             async function (req: Request, res: Response) {
                 try {
                     const { space } = res.locals;
-                    const { did } = req.params;
+                    let { did } = req.params;
                     const revalidate = get(req.query, 'revalidate', 'no');
+
+                    if (isValidAddress(did)) {
+                        const user = await userRepo.getUser(did);
+                        if (!user) return res.sendStatus(404);
+
+                        did = user.did;
+                    }
 
                     const spaceHash = await repo.hash(space?.did!);
                     const key = getHashKey(spaceHash);
