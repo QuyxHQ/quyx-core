@@ -22,11 +22,6 @@ export default class TelegramMessaging {
         return await this.tg?.sendMessage(chatId, text, opts);
     }
 
-    async sendUnlinkTGMessage(chatId: number) {
-        const text = `☹️ Why are you leaving? You can help us improve your experience with our mini app\n\nFeedback can be sent to support@quyx.xyz\nThanks!`;
-        return await this.tg?.sendMessage(chatId, text);
-    }
-
     async sendPermittedSpaceMessage(chatId: number, hash: string, space: Space) {
         const text = `❗️❗️ Heads up! You just gave a space access to your credential, more details on this can be found below\n\nSpace: ${space.name}\nURL: ${space.url}\nIdentifier: ${space.did}`;
 
