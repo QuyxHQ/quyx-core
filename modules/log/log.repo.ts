@@ -33,6 +33,7 @@ export default class LogRepo extends BaseRepo<Log, logDoc> {
                 skip,
                 limit,
                 populate: 'space',
+                sort: { createdAt: -1 },
             }
         );
     }
@@ -48,6 +49,7 @@ export default class LogRepo extends BaseRepo<Log, logDoc> {
                 skip,
                 limit,
                 populate: 'space',
+                sort: { createdAt: -1 },
             }
         );
     }

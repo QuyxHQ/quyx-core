@@ -134,6 +134,7 @@ export default class SpaceRepo extends BaseRepo<Space, spaceDoc> {
                 lean: true,
                 skip,
                 limit,
+                sort: { createdAt: -1 },
             }
         );
     }
