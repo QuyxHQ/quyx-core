@@ -336,7 +336,7 @@ export default class IdentityRoute extends AbstractRoutes {
                     const revalidate = get(req.query, 'revalidate', 'no');
 
                     if (isValidAddress(did)) {
-                        const user = await userRepo.getUser(did);
+                        const user = await userRepo.getUser(Address.parse(did).toRawString());
                         if (!user) return res.sendStatus(404);
 
                         did = user.did;
