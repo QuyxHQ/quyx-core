@@ -21,7 +21,7 @@ const userRepo = new UserRepo();
     try {
         const app = createServer();
         const httpServer = http.createServer(app);
-        const PORT = 3000;
+        const PORT = 3005;
 
         const io = new Server(httpServer, {
             cors: {
