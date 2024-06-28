@@ -36,9 +36,6 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
         try {
             const rawAddr = Address.parse(address).toRawString();
 
-            const user = await this.getUser(rawAddr);
-            if (user) return { status: true, data: user };
-
             const [username, { did }] = await Promise.all([
                 this.getUsername(),
                 this.identity.createDID(),
@@ -47,13 +44,23 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
             const hash = await this.identity.hash(did);
 
             const [result] = await Promise.all([
-                this.insert({
-                    address: rawAddr,
-                    hasBlueTick: false,
-                    username,
-                    did,
-                    pending_usernames: [],
-                }),
+                this.model.findOneAndUpdate(
+                    { address: rawAddr },
+                    {
+                        $setOnInsert: {
+                            hasBlueTick: false,
+                            username,
+                            did,
+                            pending_usernames: [],
+                        },
+                    },
+                    {
+                        upsert: true,
+                        new: true,
+                        setDefaultsOnInsert: true,
+                        lean: true,
+                    }
+                ),
                 env.IS_TESTNET ? () => {} : this.storage.addFile(hash, []), // this will store the hash of all the user credentials
             ]);
             return { status: true, data: omit(result, 'tg') };
