@@ -8,7 +8,7 @@ type URLResponseObject = { gateway: string; ipfs: string };
 export default class FileBase {
     private s3: S3Client;
 
-    constructor(private bucket = 'quyx') {
+    constructor(private bucket = env.FILEBASE_BUCKET) {
         if (env.IS_TESTNET) {
             this.s3 = new S3Client({ endpoint: 'https://s3.filebase.com', region: 'us-east-1' });
         } else {
@@ -61,7 +61,6 @@ export default class FileBase {
 
             const resp = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key }));
             const cid = resp.Metadata?.cid;
-
             if (!cid) throw new Error('Error: Could not get file CID');
 
             return this.getUrls(cid);

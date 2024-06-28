@@ -31,7 +31,7 @@ export default class UserRepo extends BaseRepo<User, userDoc> {
     }
 
     async upsertUser(address: string | null) {
-        if (!address) return { status: true, data: null };
+        if (!address) return { status: false, data: null };
 
         try {
             const rawAddr = Address.parse(address).toRawString();
