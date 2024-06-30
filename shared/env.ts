@@ -47,7 +47,7 @@ COLLECTION_ADDR = COLLECTION_ADDR || 'EQDO6qwt0-_Tm7jDbdlRfwVN-KhW87NLzTFi--gIHp
 MARKETPLACE_ADDR = MARKETPLACE_ADDR || 'EQBJKS1TMbYYSvlHXAfqE1D6sJDSl3VmHi0EYTpYw95_5rCz';
 TON_WEBSOCKET_URL = TON_WEBSOCKET_URL || 'wss://testnet.tonapi.io/v2/websocket';
 FILEBASE_BUCKET = FILEBASE_BUCKET || 'quyx';
-const IS_TESTNET = NETWORK === 'mainnet' ? false : false;
+const IS_TESTNET = NETWORK === 'mainnet' ? false : true;
 
 BASE_URL = BASE_URL || 'http://localhost:3000';
 const GITHUB_REDIRECT_URL = `${BASE_URL}/auth/github/callback`;
