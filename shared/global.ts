@@ -80,6 +80,62 @@ export function getHashKey(hash: string) {
     return `__HASH:/${hash}`;
 }
 
+export function encrypt(input: Object | string) {
+    if (!env.ENCRYPTION_PUBLIC_KEY) throw new Error('RSA_PUBLIC_KEY not set');
+    const data = typeof input === 'object' ? JSON.stringify(input) : input;
+
+    if (typeof input === 'object') input = JSON.stringify(input);
+
+    const key = crypto.randomBytes(32);
+
+    const encryptedKey = crypto.publicEncrypt(
+        {
+            key: crypto.createPublicKey(env.ENCRYPTION_PUBLIC_KEY),
+            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        },
+        key
+    );
+
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    let encryptedData = cipher.update(data, 'utf8', 'hex');
+    encryptedData += cipher.final('hex');
+    const authTag = cipher.getAuthTag();
+
+    return `${encryptedData}.${encryptedKey.toString('hex')}.${iv.toString(
+        'hex'
+    )}.${authTag.toString('hex')}`;
+}
+
+export function decrypt(input: string) {
+    if (!env.ENCRYPTION_PRIVATE_KEY) throw new Error('RSA_PRIVATE_KEY not set');
+
+    const [encryptedData, encryptedKey, iv, authTag] = input.split('.');
+    if (!encryptedData || !encryptedKey || !iv || !authTag) {
+        throw new Error('Invalid encrypted input');
+    }
+
+    const key = crypto.privateDecrypt(
+        {
+            key: env.ENCRYPTION_PRIVATE_KEY,
+            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        },
+        Buffer.from(encryptedKey, 'hex')
+    );
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'hex'));
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+    let decryptedData = decipher.update(encryptedData, 'hex', 'utf8');
+    decryptedData += decipher.final('utf8');
+    if (!decryptedData) return null;
+
+    try {
+        return JSON.parse(decryptedData) as Record<string, any>;
+    } catch {
+        return decryptedData as any;
+    }
+}
+
 export async function generatePayloadToken(input?: string) {
     if (!env.ENCRYPTION_PUBLIC_KEY) throw new Error('RSA_PUBLIC_KEY not set');
 

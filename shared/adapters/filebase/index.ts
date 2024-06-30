@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3
 import env from '../../env';
 import { Logger } from '../../logger';
 import axios from 'axios';
+import { decrypt, encrypt } from '../../global';
 
 type URLResponseObject = { gateway: string; ipfs: string };
 
@@ -46,7 +47,7 @@ export default class FileBase {
      * @returns {URLResponseObject} the urls pointing to the file
      **/
     async addFile(key: string, content: Record<string, any>): Promise<URLResponseObject> {
-        const buffer = Buffer.from(JSON.stringify(content));
+        const buffer = Buffer.from(encrypt(content));
         const Key = `${key}.json`;
 
         try {
@@ -95,6 +96,12 @@ export default class FileBase {
     async readContentFromFile(url: string): Promise<Record<string, any>> {
         try {
             const { data } = await axios.get(url);
+
+            if (typeof data === 'string') {
+                const response = decrypt(data);
+                if (response) return response;
+            }
+
             return data as Record<string, any>;
         } catch (e: any) {
             Logger.red(e);

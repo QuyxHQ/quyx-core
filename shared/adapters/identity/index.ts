@@ -117,20 +117,21 @@ export default class IdentityManagement {
 
         const { gateway } = await this.storage.getFile(subjectHash);
         const data = (await this.storage.readContentFromFile(gateway)) as string[];
+        console.log('Data:', data);
         data.push(hash);
 
         const content = {
             subject,
             jwt,
             revoked: false,
-            spaces: []
+            spaces: [],
         };
 
         const [urls] = await Promise.all([
             this.storage.addFile(hash, content),
             this.storage.addFile(subjectHash, data),
             this.cache.set(getHashKey(subjectHash), data),
-            this.cache.set(getHashKey(hash), content)
+            this.cache.set(getHashKey(hash), content),
         ]);
 
         return { jwt, hash, urls };
